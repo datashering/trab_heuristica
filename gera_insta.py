@@ -17,6 +17,9 @@ def write_instance(f, j):
 def write_c(demand, capacity, f_cost, v_cost):
     file = open("instancias_c/{:d}-{:d}.dat".format(len(capacity), len(demand)), 'w')
 
+    file.write("{:d} {:d} ".format(len(capacity), len(demand)))
+    file.write("\n")
+
     [file.write("{:d} ".format(d)) for d in demand]
     file.write("\n")
 
