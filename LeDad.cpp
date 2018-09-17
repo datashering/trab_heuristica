@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 
-struct inst {
+struct Inst {
   int F;
   int J;
   int *d;
@@ -10,7 +10,7 @@ struct inst {
   int **c;
 };
 
-void aloca_struc(inst &dados){
+void aloca_struc(Inst &dados){
   dados.d = new int[dados.J];
   dados.b = new int[dados.F];
   dados.f = new int[dados.F];
@@ -20,7 +20,7 @@ void aloca_struc(inst &dados){
   }
 }
 
-void libera_struc(inst& dados){
+void libera_struc(Inst& dados){
   delete[] dados.d;
   delete[] dados.b;
   delete[] dados.f;
@@ -30,7 +30,7 @@ void libera_struc(inst& dados){
   delete[] dados.c;
 }
 
-void le_arq(inst& dados, char nome[]){
+void le_arq(Inst& dados, const char* nome){
   std::ifstream file;
   file.open(nome);
   //Verificando se ocorreu algum problema na abertura do arquivo
@@ -71,7 +71,7 @@ void le_arq(inst& dados, char nome[]){
 }
 
 int main(){
-  inst dados;
+  Inst dados;
   char nome[50];
 
   std::cout << "Digite o nome da instancia: " << std::endl;

@@ -6,9 +6,9 @@ def write_instance(f, j):
 
     demand = np.array([int(np.random.randint(50,100)) for j in J])
     capacity = np.array([np.random.randint(1,11) for f in F])
-    capacity = capacity * (int(demand.sum()*1.5/capacity.sum()))
-    f_cost = [np.random.randint(100,500) for f in F]
-    v_cost = [[np.random.randint(10,50) for j in J] for f in F]
+    capacity = capacity * (int(demand.sum()*2/capacity.sum()))
+    f_cost = [np.random.randint(10000,50000) for f in F]
+    v_cost = [[np.random.randint(1,5) for j in J] for f in F]
 
     write_c(demand, capacity, f_cost, v_cost)
     write_mod(demand, capacity, f_cost, v_cost)
@@ -71,8 +71,13 @@ def write_mod(demand, capacity, f_cost, v_cost):
 
 if __name__ == "__main__":
 
-    write_instance(10, 20);
-    write_instance(10, 30);
+    write_instance(20, 10);
+    write_instance(30, 10);
     write_instance(20, 20);
-    write_instance(20, 30);
-    write_instance(50, 100);
+    write_instance(30, 20);
+    write_instance(100, 50);
+    write_instance(200,200);
+    write_instance(400,200);
+    write_instance(500,200);
+    write_instance(600,150);
+    write_instance(800,400);
