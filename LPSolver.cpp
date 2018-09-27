@@ -1,21 +1,62 @@
 #include <glpk.h>
-#include "Inst.h"
+#include "Instancia.h"
 #include "LPSolver.h"
 
-LPSolver::LPSolver(Inst &inst) {
+LPSolver::LPSolver(Instancia &dados) {
   // Instanciando solver do glpk
   lp = glp_create_prob();
   glp_set_prob_name(lp, "Problema do Transporte");
   glp_set_obj_dir(lp, GLP_MIN);
 
   // Alocando arrays para matriz de restrições
-  int n_linhas = inst.J + 2 * inst.F + inst.I + 1;
-  int n_cols = inst.I * inst.J + inst.F * inst.J + 1;
+  int n_linhas = dados.J + 2 * dados.F + dados.I + 1;
+  int n_cols = dados.I * dados.J + dados.F * dados.J + 1;
 
   ia = new int[n_linhas];
   ja = new int[n_cols];
   ar = new double[n_linas * n_colunas];
 
+  // Alocando vetor de indices das variáveis modelo -> glpk
+  x_idx = new int*[dados.I];
+  for (int i=0; i<dados.I; i++) {
+    x_idx[i] = new int[dados.F];
+  }
+
+  z_idx = new int*[dados.F];
+  for (int f=0; f<dados.F; f++) {
+    z_idx[f] = new int[dados.J];
+  }
+
+  // Alocando vetor de indices das variáveis glpk -> modelo
+  int idx = 1;
+  idx_vec.resize(dados.I * dados.F + dados.F * dados.J + 1);
+
+  // Criando modelo
+  // Var Xif
+  glp_add_cols(lp, dados.I * dados.F) {
+    for (int i=1; i<=dados.I; i++) {
+      for (int f=1; f<=dados.F; f++) {
+        glp_set_col_bnds(lp, idx, GLP_LO, 0.0, 0.0);
+        glp_set_obj_coef(lp, idx, dados.c[i-1][f-1]);
+        x_idx[i][f] = idx;
+        idx_vec[idx].name = "x";
+        idx_vec[idx].idx[0] = i-1;
+        idx_vec[idx].idx[1] = f-1;
+        idx++;
+      }
+    }
+  }
+  // Var Zfj
+  glp_add_cols(lp, dados.F * dados.J) {
+    for (int f=1; f<=dados.F; f++) {
+      for (int j=1; j<=dados.J; j++) {
+        glp_set_col_bnds(lp, idx, GLP_LO, 0.0, 0.0);
+        glp_set_obj_coef(lp, idx, dados.t[f-1][j-1]);
+        z_idx[f][j] = idx;
+        idx++;
+      }
+    }
+  }
 
 
 }
@@ -31,7 +72,7 @@ int main() {
   glp_set_obj_dir(mip, GLP_MIN);
 
   // Leitura dos dados e alocação dos vetores de coeficientes
-  Inst dados("instancias_c/400-200.dat");
+  Instancia dados("instancias_c/400-200.dat");
   int max_idx = 2 * dados.F * dados.J + dados.F + 1;
   ia = new int[max_idx];
   ja = new int[max_idx];

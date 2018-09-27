@@ -1,8 +1,8 @@
 #include <fstream>
 #include <iostream>
-#include "Inst.h"
+#include "Instancia.h"
 
-Inst::Inst(const char *nome)
+Inst::Instancia(const char *nome)
 {
   std::ifstream file;
   file.open(nome);
@@ -79,7 +79,7 @@ Inst::Inst(const char *nome)
   file.close();
 }
 
-Inst::~Inst()
+Instancia::~Instancia()
 {
   //Desalocando o vetor de custo variavel c
   for (int i = 0; i < I; i++)

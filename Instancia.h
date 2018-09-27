@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 
-struct Inst
+struct Instancia
 {
   int I;                      //Numero de fabricas
   int F;                      //Numero de centros de distribuicao (CD)
@@ -15,7 +15,7 @@ struct Inst
   double **c;                    //Custo de transporte unitario de uma fabrica pra um CD
   double **t;                    //Custo de transporter unitario de um CD para um ponto de demanda
 
-  Inst(const char *nome);
+  Instancia(const char *nome);
 
-  ~Inst();
+  ~Instancia();
 };
