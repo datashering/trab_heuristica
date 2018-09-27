@@ -91,7 +91,7 @@ def write_mod(p, h, d, b, c, t, r):
     file.write(";\n")
 
     file.write("param: b h := \n")
-    [file.write("{:d}  {:.3f}  {:.3f}\n".format(f, h[f], b[f])) for f in F]
+    [file.write("{:d}  {:.3f}  {:.3f}\n".format(f, b[f], h[f])) for f in F]
     file.write(";\n")
 
     file.write("param c : ")

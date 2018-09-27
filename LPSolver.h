@@ -1,27 +1,30 @@
 #pragma once
 
 #include <glpk.h>
-#include  <vector.h>
+#include <vector>
+#include <limits>
+#include <iostream>
 #include "Instancia.h"
+
+const double MAX = std::numeric_limits<double>::max();
 
 struct Indice {
   char name;
   int idx[2];
-}
+};
 
 class LPSolver {
-  glp_prob *lp;       // glpk
-  int *ia, *ja;       // Indices para matriz de restrições
-  double *ar;         // Valores da matriz de restrições
+public:
 
-  std::vector<Indice> idx_vec;
-  double func_obj;    // Função Objetivo
+  glp_prob *lp;                 // glpk
+  std::vector<Indice> lp_var;   // Indices das variáves do lp
+  double func_obj;              // Função Objetivo
 
-  LPSolver(Inst&);
+  LPSolver(Instancia&);
   ~LPSolver();
 
   void resolve();
   void abre_cd(int);
   void fecha_cd(int);
-  void atualiza_sol(Solucao&);
-}
+  //void atualiza_sol(Solucao&);
+};
