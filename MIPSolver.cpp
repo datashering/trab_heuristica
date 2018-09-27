@@ -13,7 +13,7 @@ int main() {
   glp_set_obj_dir(mip, GLP_MIN);
 
   // Leitura dos dados e alocação dos vetores de coeficientes
-  Inst dados("instancias_c/20-10.dat");
+  Inst dados("instancias_c/400-200.dat");
   int max_idx = 2 * dados.F * dados.J + dados.F + 1;
   ia = new int[max_idx];
   ja = new int[max_idx];

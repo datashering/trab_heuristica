@@ -2,60 +2,96 @@
 #include <iostream>
 #include "Inst.h"
 
-Inst::Inst(const char *nome) {
+Inst::Inst(const char *nome)
+{
   std::ifstream file;
   file.open(nome);
 
   //Verificando se ocorreu algum problema na abertura do arquivo
-  if (!file) {
+  if (!file)
+  {
     std::cout << "Erro na abertura do arquivo!!" << std::endl;
     return;
   }
-  //Lendo quantos pontos de oferta e demanda a instancia tem
-  file >> F >> J;
-  std::cout << F << " " << J << std::endl;
+  //Lendo quantos pontos de oferta, CD e demanda que a instancia tem
+  file >> I >> F >> J;
+  std::cout << I << " " << F << " " << J << std::endl;
 
-  //Aloca a memoria para a struct dados após ler quantas fábricas e pontos de demandas ela tera
-  d = new int[J];
-  b = new int[F];
-  f = new int[F];
-  c = new int*[F];
-  for (int i = 0; i < F; i++){
-    c[i] = new int[J];
+  //Dando resize nos vector e alocando as matrizes de custos variaveis
+  p.resize(I);
+  h.resize(F);
+  d.resize(J);
+  b.resize(F);
+
+  c = new double*[I];
+  for (int i = 0; i < I; i++)
+  {
+    c[i] = new double[F];
+  }
+  t = new double*[F];
+  for (int i = 0; i < F; i++)
+  {
+    t[i] = new double[J];
   }
 
+  //Lendo a capacidade da fabrica
+  for (int i = 0; i < I; i++)
+  {
+    file >> p[i];
+    std::cout << "Fabrica[" << i+1 << "]: " << p[i] << std::endl;
+  }
+  //Lendo a capacidade do CD
+  for (int i = 0; i < F; i++)
+  {
+    file >> h[i];
+    std::cout << "Capacidade[" << i+1 << "]: " << h[i] << std::endl;
+  }
   //Lendo a demanda
-  for(int i = 0; i < J; i++){
+  for (int i = 0; i < J; i++)
+  {
     file >> d[i];
-    //std::cout << "Demanda[" << i+1 << "]: " << d[i] << std::endl;
+    std::cout << "Demanda[" << i+1 << "]: " << d[i] << std::endl;
   }
-  //Lendo a capacidade
-  for(int i = 0; i < F; i++){
+  //Lendo o custo fixo de abertura
+  for (int i = 0; i < F; i++)
+  {
     file >> b[i];
-    //std::cout << "Capacidade[" << i+1 << "]: " << b[i] << std::endl;
+    std::cout << "Custo Fixo[" << i+1 << "]: " << b[i] << std::endl;
   }
-  //Lendo os custos fixos
-  for(int i = 0; i < F; i++){
-    file >> f[i];
-    //std::cout << "Custo Fixo[" << i+1 << "]: " << f[i] << std::endl;
-  }
-  //Lendo os custos variaveis da oferta I para demanda J
-  for(int i = 0; i < F; i++){
-    for(int j = 0; j < J; j++){
+  //Lendo o custo c, de I para F
+  for (int i = 0; i < I; i++)
+  {
+    for (int j = 0; j < F; j++)
+    {
       file >> c[i][j];
-      //std::cout << "Custo Variavel[" << i+1 << "][" << j+1 << "]:" << c[i][j] << std::endl;
+      std::cout << "Custo Variavel C[" << i+1 << "][" << j+1 << "]:" << c[i][j] << std::endl;
     }
   }
-
+  //Lendo o custo t, de F para J
+  for (int i = 0; i < F; i++)
+  {
+    for (int j = 0; j < J; j++)
+    {
+      file >> t[i][j];
+      std::cout << "Custo Variavel T[" << i+1 << "][" << j+1 << "]:" << t[i][j] << std::endl;
+    }
+  }
   file.close();
 }
 
-Inst::~Inst() {
-  delete[] d;
-  delete[] b;
-  delete[] f;
-  for(int i = 0; i < F; i++){
+Inst::~Inst()
+{
+  //Desalocando o vetor de custo variavel c
+  for (int i = 0; i < I; i++)
+  {
     delete[] c[i];
   }
   delete[] c;
+
+  //Desalocando o vetor de custo variavel t
+  for (int i = 0; i < F; i++)
+  {
+    delete[] t[i];
+  }
+  delete[] t;
 }
