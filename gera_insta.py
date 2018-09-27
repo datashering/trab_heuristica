@@ -35,7 +35,7 @@ def write_instance(i, f, j, r):
 
 
 def write_c(p, h, d, b, c, t, r):
-    file = open("instancias_c/mod1/{:d}-{:d}-{:d}-{:.1f}.dat".format(len(p), len(h), len(d), r), 'w')
+    file = open("instancias_c/{:d}-{:d}-{:d}-{:.1f}.dat".format(len(p), len(h), len(d), r), 'w')
 
     file.write("{:d} {:d} {:d}".format(len(p), len(h), len(d)))
     file.write("\n")
@@ -116,6 +116,6 @@ def write_mod(p, h, d, b, c, t, r):
 
 if __name__ == "__main__":
 
-    write_instance(20, 50, 200, 1.5)
-    write_instance(20, 50, 200, 2.0)
-    write_instance(20, 50, 200, 3.0)
+    write_instance(2, 3, 5, 1.5)
+    #write_instance(20, 50, 200, 2.0)
+    #write_instance(20, 50, 200, 3.0)
