@@ -30,7 +30,7 @@ def write_instance(i, f, j, r):
     print(h.sum())
     print(d.sum())
 
-    #write_c(p, h, d, b, c, t, r)
+    write_c(p, h, d, b, c, t, r)
     write_mod(p, h, d, b, c, t, r)
 
 

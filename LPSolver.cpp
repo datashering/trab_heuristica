@@ -1,6 +1,24 @@
 #include <glpk.h>
-#include <iostream>
 #include "Inst.h"
+#include "LPSolver.h"
+
+LPSolver::LPSolver(Inst &inst) {
+  // Instanciando solver do glpk
+  lp = glp_create_prob();
+  glp_set_prob_name(lp, "Problema do Transporte");
+  glp_set_obj_dir(lp, GLP_MIN);
+
+  // Alocando arrays para matriz de restrições
+  int n_linhas = inst.J + 2 * inst.F + inst.I + 1;
+  int n_cols = inst.I * inst.J + inst.F * inst.J + 1;
+
+  ia = new int[n_linhas];
+  ja = new int[n_cols];
+  ar = new double[n_linas * n_colunas];
+
+
+
+}
 
 int main() {
   int *ia, *ja;

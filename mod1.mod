@@ -10,7 +10,7 @@ param b{f in F};          # Custo fixo de abertura do CD
 param c{i in I, f in F};  # Custo de transporte unitário de uma fabrica para um CD
 param t{f in F, j in J};  # Custo de transporte unitário de um CD para uma zona de demanda
 
-var z{i in I, j in J}, >=0;   # Quantidate transportada i -> f
+var z{i in I, f in F}, >=0;   # Quantidate transportada i -> f
 var x{f in F, j in J}, >=0;   # Quantidade transportada f -> j
 var y{f in F}, binary;        # 1 se a facilidade f é aberta, 0 se nao
 
