@@ -12,7 +12,7 @@ def write_instance(i, f, j, r):
     b = np.random.uniform(0, 90, f) + np.random.uniform(100, 110, f) * np.sqrt(h)
 
     # Escalando oferta com demanda
-    p = p * (d.sum() / p.sum())
+    p = p * (d.sum()*r / p.sum())
 
     # Escalando capacidade com demanda
     h = h * (d.sum()*r / h.sum())
@@ -35,7 +35,7 @@ def write_instance(i, f, j, r):
 
 
 def write_c(p, h, d, b, c, t, r):
-    file = open("instancias_c/{:d}-{:d}-{:d}-{:.1f}.dat".format(len(p), len(h), len(d), r), 'w')
+    file = open("instancias_c/mod1/{:d}-{:d}-{:d}-{:.1f}.dat".format(len(p), len(h), len(d), r), 'w')
 
     file.write("{:d} {:d} {:d}".format(len(p), len(h), len(d)))
     file.write("\n")
@@ -114,13 +114,8 @@ def write_mod(p, h, d, b, c, t, r):
 
     file.close()
 
-
 if __name__ == "__main__":
 
-    write_instance(5, 10, 25, 1.5)
-    write_instance(5, 25, 50, 1.5)
-    write_instance(10, 50, 500, 1.5)
-    write_instance(10, 50, 500, 2.0)
-    write_instance(10, 50, 500, 3.0)
-    write_instance(10, 50, 500, 4.0)
-    write_instance(10, 100, 500, 2.0)
+    write_instance(20, 50, 200, 1.5)
+    write_instance(20, 50, 200, 2.0)
+    write_instance(20, 50, 200, 3.0)
