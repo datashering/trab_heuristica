@@ -121,7 +121,7 @@ LPSolver::LPSolver(Instancia &dados) {
   }
 
   // r4: Capacidade de produção da fábrica
-  glp_add_rows(lp, dados.F);
+  glp_add_rows(lp, dados.I);
   for (int i=1; i<=dados.I; i++) {
     row_count++;
     glp_set_row_bnds(lp, row_count, GLP_UP, 0.0, dados.p[i-1]);
@@ -162,7 +162,7 @@ void LPSolver::resolve() {
 
   glp_init_smcp(&params);
   params.presolve = GLP_ON;
-  params.tm_lim = 180;
+  //params.tm_lim = 180;
 
   glp_simplex(lp, &params);
   func_obj = glp_get_obj_val(lp);
