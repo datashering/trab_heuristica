@@ -1,6 +1,6 @@
 import numpy as np
 
-def write_instance(i, f, j, r):
+def write_instance(i, f, j, r, sub_dir=""):
     I = range(i)
     J = range(j)
     F = range(f)
@@ -23,19 +23,22 @@ def write_instance(i, f, j, r):
 
     dist_euc = lambda x, y: np.sqrt( (x[0] - y[0])**2 + (x[1] - y[1])**2 )
 
-    c = [[dist_euc(i,f)*10 for f in F_cord] for i in I_cord]
-    t = [[dist_euc(f,j)*10 for j in J_cord] for f in F_cord]
+    c = [[dist_euc(i,f)*15 for f in F_cord] for i in I_cord]
+    t = [[dist_euc(f,j)*15 for j in J_cord] for f in F_cord]
 
-    print(p.sum())
-    print(h.sum())
-    print(d.sum())
+    # Escrevendo .dat para modelo em C
+    file_name = "instancias_c/" + sub_dir + "{:d}-{:d}-{:d}-{:.1f}".format(len(p), len(h), len(d), r)
+    file = open(file_name, 'w')
+    write_c(p, h, d, b, c, t, file)
+    file.close()
 
-    write_c(p, h, d, b, c, t, r)
-    write_mod(p, h, d, b, c, t, r)
+    # Escrevendo .dat para modelo e math prog
+    # file_name = "instancias_mod/" + sub_dir + "{:d}-{:d}-{:d}-{:.1f}.dat".format(len(p), len(h), len(d), r)
+    # file =  open(file_name, 'w')
+    # write_mod(p, h, d, b, c, t, file)
+    # file.close()
 
-def write_c(p, h, d, b, c, t, r):
-    file = open("instancias_c/{:d}-{:d}-{:d}-{:.1f}.dat".format(len(p), len(h), len(d), r), 'w')
-
+def write_c(p, h, d, b, c, t, file):
     file.write("{:d} {:d} {:d}".format(len(p), len(h), len(d)))
     file.write("\n")
 
@@ -61,10 +64,7 @@ def write_c(p, h, d, b, c, t, r):
 
     file.close()
 
-def write_mod(p, h, d, b, c, t, r):
-
-    file =  open("instancias_mod/{:d}-{:d}-{:d}-{:.1f}.dat".format(len(p), len(h), len(d), r), 'w')
-
+def write_mod(p, h, d, b, c, t, file):
     I = range(len(p))
     F = range(len(h))
     J = range(len(d))
@@ -115,48 +115,20 @@ def write_mod(p, h, d, b, c, t, r):
 
 if __name__ == "__main__":
 
-    write_instance(5, 10, 30, 1.5)
-    write_instance(5, 10, 60, 1.5)
-    write_instance(5, 10, 90, 1.5)
-    write_instance(5, 10, 120, 1.5)
-    write_instance(5, 10, 150, 1.5)
-    write_instance(5, 10, 180, 1.5)
-    write_instance(5, 10, 210, 1.5)
-    write_instance(5, 10, 240, 1.5)
+    V = range(40, 201, 40)
+    R = [1.5*i for i in range(1,6)]
 
-    write_instance(5, 10, 30, 1.5)
-    write_instance(5, 40, 30, 1.5)
-    write_instance(5, 70, 30, 1.5)
-    write_instance(5, 100, 30, 1.5)
-    write_instance(5, 130, 30, 1.5)
-    write_instance(5, 160, 30, 1.5)
-    write_instance(5, 190, 30, 1.5)
-    write_instance(5, 220, 30, 1.5)
+    for i in V:
+        [write_instance(i, 30, 30, 2.0, "batch1/" + str(v) + "-") for v in range(5)]
 
-    write_instance(5, 10, 30, 1.5)
-    write_instance(35, 10, 30, 1.5)
-    write_instance(65, 10, 30, 1.5)
-    write_instance(95, 10, 30, 1.5)
-    write_instance(125, 10, 30, 1.5)
-    write_instance(155, 10, 30, 1.5)
-    write_instance(185, 10, 30, 1.5)
-    write_instance(215, 10, 30, 1.5)
+    for f in V:
+        [write_instance(30, f, 30, 2.0, "batch2/" + str(v) + "-") for v in range(5)]
 
-    write_instance(5, 10, 25, 1.5)
-    write_instance(15, 20, 35, 1.5)
-    write_instance(25, 30, 45, 1.5)
-    write_instance(35, 40, 55, 1.5)
-    write_instance(45, 50, 65, 1.5)
-    write_instance(55, 60, 75, 1.5)
-    write_instance(65, 70, 85, 1.5)
-    write_instance(75, 80, 95, 1.5)
-    write_instance(85, 90, 105, 1.5)
-    write_instance(95, 100, 115, 1.5)
-    write_instance(105, 110, 125, 1.5)
-    write_instance(115, 120, 135, 1.5)
-    write_instance(125, 130, 145, 1.5)
-    write_instance(135, 140, 155, 1.5)
-    write_instance(145, 150, 165, 1.5)
-    write_instance(155, 160, 175, 1.5)
-    write_instance(165, 170, 185, 1.5)
-    write_instance(175, 180, 195, 1.5)
+    for j in V:
+        [write_instance(30, 30, j, 2.0, "batch3/" + str(v) + "-") for v in range(5)]
+
+    for x in V:
+        [write_instance(x, x, x, 2.0, "batch4/" + str(v) + "-") for v in range(5)]
+
+    for r in R:
+        [write_instance(50, 100, 200, r, "batch5/" + str(v) + "-") for v in range(3)]
