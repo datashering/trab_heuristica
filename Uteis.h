@@ -19,3 +19,15 @@ struct Instancia
 
   ~Instancia();
 };
+
+struct Solucao
+{
+  double func_obj;
+  std::vector<bool> y;
+  double **x;
+  double **z;
+
+  Solucao(int, int, int);
+
+  ~Solucao();
+}

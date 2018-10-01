@@ -1,89 +1,382 @@
-#include <iostream>
 #include <glpk.h>
+#include <iostream>
+#include "Uteis.h"
+#include "Solver.h"
 
-//  76, 81, 87, 74, 98, 93, 58, 99, 64, 78, 83, 72, 63, 77, 77, 76, 88, 79, 89, 59
+//  --- Funcoes para uso interno  ---
+void get_info(glp_tree *tree, void *info) {
 
-int main() {
-  double demand[20] = { 76, 81, 87, 74, 98, 93, 58, 99, 64, 78, 83, 72, 63, 77, 77, 76, 88, 79, 89, 59 };
-  double capacity[10] = { 400, 50, 50, 250, 150, 100, 100, 450, 500, 300 };
-  double f_cost[10] = { 240, 212, 445, 263, 267, 253, 321, 284, 186, 374  };
-  double v_cost[10][20] = {
-    { 33, 37, 23, 12, 29, 20, 29, 37, 34, 37, 31, 11, 39, 43, 27, 15, 35, 20, 10, 31 },
-    { 29, 33, 15, 27, 28, 18, 12, 32, 24, 38, 46, 47, 14, 15, 29, 48, 34, 20, 17, 38 },
-    { 15, 19, 19, 38, 36, 10, 15, 33, 32, 19, 33, 10, 29, 13, 31, 46, 23, 14, 11, 28 },
-    { 31, 23, 49, 11, 37, 42, 26, 20, 49, 40, 38, 38, 46, 27, 47, 25, 32, 31, 43, 22 },
-    { 17, 33, 21, 13, 27, 15, 29, 34, 36, 45, 25, 40, 41, 19, 38, 12, 21, 10, 36, 39 },
-    { 26, 34, 20, 18, 15, 27, 25, 46, 40, 29, 26, 10, 43, 27, 21, 13, 34, 13, 41, 20 },
-    { 30, 27, 47, 24, 23, 41, 39, 10, 49, 45, 30, 18, 27, 49, 47, 48, 13, 12, 42, 41 },
-    { 36, 38, 43, 22, 32, 35, 21, 16, 46, 44, 39, 49, 18, 35, 49, 28, 12, 30, 23, 28 },
-    { 44, 36, 49, 18, 37, 35, 24, 39, 47, 42, 22, 34, 18, 33, 25, 20, 31, 20, 31, 23 },
-    { 29, 28, 13, 10, 20, 37, 11, 48, 38, 49, 32, 22, 22, 14, 10, 47, 39, 23, 40, 31 }
-  };
+  double *gap = static_cast<double*>(info);
+  double new_gap = glp_ios_mip_gap(tree);
 
-  glp_prob *mip = glp_create_prob();
-  int ia[1001], ja[1001];
-  double ar[1001];
-  glp_set_prob_name(mip, "Location Problem");
+  if (*gap > new_gap) {
+    *gap = new_gap;
+  }
+
+  return;
+}
+
+//   ---  Struct Indice  ---
+std::ostream& operator << (std::ostream &o, const Indice &a) {
+  o << a.name << "(" << a.idx[0] << "," << a.idx[1] << ")";
+  return o;
+}
+
+//   ---  Class LPSolver ---
+LPSolver::LPSolver(Instancia &dados) {
+  func_obj = MAX;
+  // Instanciando solver do glpk
+  lp = glp_create_prob();
+  glp_set_prob_name(lp, "Problema do Transporte");
+  glp_set_obj_dir(lp, GLP_MIN);
+
+  // Alocando arrays para matriz de restrições  IF + JF  F(I + J)
+  int max_size = (dados.J + 2*dados.F + dados.I) * (dados.F * (dados.I + dados.J)) + 1;
+
+  int *ia = new int[max_size];
+  int *ja = new int[max_size];
+  double *ar = new double[max_size];
+
+  // Alocando vetor de indices das variáveis modelo -> glpk
+  int **x_idx = new int*[dados.I];
+  for (int i=0; i<dados.I; i++) {
+    x_idx[i] = new int[dados.F];
+  }
+
+  int **z_idx = new int*[dados.F];
+  for (int f=0; f<dados.F; f++) {
+    z_idx[f] = new int[dados.J];
+  }
+
+  // Alocando vetor de indices das variáveis glpk -> modelo
+  int count = 0;
+  lp_var.resize(dados.I * dados.F + dados.F * dados.J + 1);
+
+  // Criando modelo
+  // Var Xif
+  glp_add_cols(lp, dados.I * dados.F);
+  for (int i=1; i<=dados.I; i++) {
+    for (int f=1; f<=dados.F; f++) {
+      count++;
+      glp_set_col_bnds(lp, count, GLP_LO, 0.0, 0.0);
+      glp_set_obj_coef(lp, count, dados.c[i-1][f-1]);
+      x_idx[i-1][f-1] = count;
+      lp_var[count].name = 'x';
+      lp_var[count].idx[0] = i-1;
+      lp_var[count].idx[1] = f-1;
+    }
+  }
+
+  // Var Zfj
+  glp_add_cols(lp, dados.F * dados.J);
+  for (int f=1; f<=dados.F; f++) {
+    for (int j=1; j<=dados.J; j++) {
+      count++;
+      glp_set_col_bnds(lp, count, GLP_LO, 0.0, 0.0);
+      glp_set_obj_coef(lp, count, dados.t[f-1][j-1]);
+      z_idx[f-1][j-1] = count;
+      lp_var[count].name = 'z';
+      lp_var[count].idx[0] = f - 1;
+      lp_var[count].idx[1] = j - 1;
+    }
+  }
+
+  int row_count = 0;
+  count = 0;
+
+  // r1: Toda demanda deve ser atendida
+  glp_add_rows(lp, dados.J);
+  for (int j=1; j<=dados.J; j++) {
+    row_count++;
+    glp_set_row_bnds(lp, row_count, GLP_FX, dados.d[j-1], 0.0);
+
+    for (int f=1; f<=dados.F; f++) {
+      count++;
+      ia[count] = row_count;
+      ja[count] = z_idx[f-1][j-1];
+      ar[count] = 1;
+    }
+  }
+
+  // r2: Capacidade do CD
+  glp_add_rows(lp, dados.F);
+  for (int f=1; f<=dados.F; f++) {
+    row_count++;
+    glp_set_row_bnds(lp, row_count, GLP_UP, 0.0, dados.h[f-1]);
+
+    for (int j=1; j<=dados.J; j++) {
+      count++;
+      ia[count] = row_count;
+      ja[count] = z_idx[f-1][j-1];
+      ar[count] = 1;
+    }
+  }
+
+  // r3: Conservação de fluxo no CD
+  glp_add_rows(lp, dados.F);
+  for (int f=1; f<=dados.F; f++) {
+    row_count++;
+    glp_set_row_bnds(lp, row_count, GLP_FX, 0.0, 0.0);
+
+    for (int i=1; i<=dados.I; i++) {
+      count++;
+      ia[count] = row_count;
+      ja[count] = x_idx[i-1][f-1];
+      ar[count] = 1;
+    }
+
+    for (int j=1; j<=dados.J; j++) {
+      count++;
+      ia[count] = row_count;
+      ja[count] = z_idx[f-1][j-1];
+      ar[count] = -1;
+    }
+  }
+
+  // r4: Capacidade de produção da fábrica
+  glp_add_rows(lp, dados.I);
+  for (int i=1; i<=dados.I; i++) {
+    row_count++;
+    glp_set_row_bnds(lp, row_count, GLP_UP, 0.0, dados.p[i-1]);
+
+    for (int f=1; f<=dados.F; f++) {
+      count++;
+      ia[count] = row_count;
+      ja[count] = x_idx[i-1][f-1];
+      ar[count] = 1;
+    }
+  }
+
+  // Carregando modelo
+  glp_load_matrix(lp,count, ia, ja, ar);
+
+  // Desalocando
+  for (int i=0; i<dados.I; i++) {
+    delete[] x_idx[i];
+  }
+  delete[] x_idx;
+
+  for (int f=0; f<dados.F; f++) {
+    delete[] z_idx[f];
+  }
+  delete[] z_idx;
+
+  delete[] ia;
+  delete[] ja;
+  delete[] ar;
+}
+
+LPSolver::~LPSolver() {
+  glp_delete_prob(lp);
+}
+
+void LPSolver::resolve() {
+  glp_smcp params;
+
+  glp_init_smcp(&params);
+  params.presolve = GLP_ON;
+  params.msg_lev = GLP_MSG_OFF;
+  //params.tm_lim = 180;
+
+  glp_simplex(lp, &params);
+  func_obj = glp_get_obj_val(lp);
+
+  // std::cout << func_obj << std::endl;
+  // double val;
+  // for (int i=1; i<lp_var.size(); i++) {
+  //   val = glp_get_col_prim(lp, i);
+  //   if (val > 0) {
+  //     std::cout << lp_var[i] << " = " << val << std::endl;
+  //   }
+  // }
+
+}
+
+void LPSolver::abre_cd(int idx, Instancia &dados) {
+  glp_set_row_bnds(lp, dados.J + idx + 1, GLP_UP, 0.0, dados.h[idx]);
+}
+
+void LPSolver::fecha_cd(int idx, Instancia &dados) {
+  glp_set_row_bnds(lp, dados.J + idx + 1, GLP_UP, 0.0, 0.0);
+}
+
+//TODO
+void LPSolver::atualiza_sol(Solucao &Sol) {
+
+}
+
+//   --- Class MIPSolver ---
+MIPSolver::MIPSolver(Instancia &dados) {
+  func_obj = MAX;
+  mip_gap = MAX;
+  // Instanciando solver do glpk
+  mip = glp_create_prob();
+  glp_set_prob_name(mip, "Problema da Localização");
   glp_set_obj_dir(mip, GLP_MIN);
 
-  int idx = 1;
+  // Alocando arrays para matriz de restrições  IF + JF  F(I + J)
+  int max_size = (dados.J + 2*dados.F + dados.I) * (dados.F * (dados.I + dados.J)) + 1;
 
-  glp_add_cols(mip, 20*10);
-  for(int i=1; i<=10; i++) {
-    for(int j=1; j<=20; j++) {
-      glp_set_col_bnds(mip, idx, GLP_LO, 0.0, 0.0);
-      glp_set_obj_coef(mip, idx, v_cost[i-1][j-1]);
-      idx++;
+  int *ia = new int[max_size];
+  int *ja = new int[max_size];
+  double *ar = new double[max_size];
+
+  // Alocando vetor de indices das variáveis modelo -> glpk
+  int **x_idx = new int*[dados.I];
+  for (int i=0; i<dados.I; i++) {
+    x_idx[i] = new int[dados.F];
+  }
+
+  int **z_idx = new int*[dados.F];
+  for (int f=0; f<dados.F; f++) {
+    z_idx[f] = new int[dados.J];
+  }
+
+  int *y_idx = new int[dados.F];
+
+
+  // Criando modelo
+  int count = 0;
+
+  // Var Xif
+  glp_add_cols(mip, dados.I * dados.F);
+  for (int i=1; i<=dados.I; i++) {
+    for (int f=1; f<=dados.F; f++) {
+      count++;
+      glp_set_col_bnds(mip, count, GLP_LO, 0.0, 0.0);
+      glp_set_obj_coef(mip, count, dados.c[i-1][f-1]);
+      x_idx[i-1][f-1] = count;
     }
   }
 
-  glp_add_cols(mip, 10);
-  for (int i=1; i<=10; i++) {
-    glp_set_col_kind(mip, idx, GLP_BV);
-    glp_set_obj_coef(mip, idx, f_cost[i-1]);
-    idx++;
-  }
-
-  idx = 1;
-
-  glp_add_rows(mip, 20);
-  for (int i=1; i<=20; i++) {
-    glp_set_row_bnds(mip, i, GLP_FX, demand[i-1], 0.0);
-
-    for (int j=0; j<10; j++) {
-      ia[idx] = i;
-      ja[idx] = j*20 + i;
-      ar[idx] = 1;
-      idx++;
+  // Var Zfj
+  glp_add_cols(mip, dados.F * dados.J);
+  for (int f=1; f<=dados.F; f++) {
+    for (int j=1; j<=dados.J; j++) {
+      count++;
+      glp_set_col_bnds(mip, count, GLP_LO, 0.0, 0.0);
+      glp_set_obj_coef(mip, count, dados.t[f-1][j-1]);
+      z_idx[f-1][j-1] = count;
     }
   }
 
-  glp_add_rows(mip, 10);
-  for (int i=1; i<=10; i++) {
-    glp_set_row_bnds(mip, i+20, GLP_UP, 0.0, 0.0);
-
-    for (int j=1; j<=20; j++){
-      ia[idx] = i + 20;
-      ja[idx] = j + (i-1)*20;
-      ar[idx] = 1;
-      idx++;
-    }
-    ia[idx] = i + 20;
-    ja[idx] = (10*20) + i;
-    ar[idx] = -capacity[i-1];
-    idx++;
+  // Var Yf
+  glp_add_cols(mip, dados.F);
+  for (int f=1; f<=dados.F; f++) {
+    count++;
+    glp_set_col_kind(mip, count, GLP_BV);
+    glp_set_obj_coef(mip, count, dados.b[f-1]);
+    y_idx[f-1] = count;
   }
 
-  glp_load_matrix(mip, idx-1, ia, ja, ar);
+  int row_count = 0;
+  count = 0;
 
-  glp_iocp param;
-  glp_init_iocp(&param);
-  param.presolve = GLP_ON;
+  // r1: Toda demanda deve ser atendida
+  glp_add_rows(mip, dados.J);
+  for (int j=1; j<=dados.J; j++) {
+    row_count++;
+    glp_set_row_bnds(mip, row_count, GLP_FX, dados.d[j-1], 0.0);
 
-  glp_intopt(mip, &param);
+    for (int f=1; f<=dados.F; f++) {
+      count++;
+      ia[count] = row_count;
+      ja[count] = z_idx[f-1][j-1];
+      ar[count] = 1;
+    }
+  }
 
-  std::cout << "Objective Fucntion: " << glp_mip_obj_val(mip) << std::endl;
+  // r2: Capacidade do CD + critério de abertura
+  glp_add_rows(mip, dados.F);
+  for (int f=1; f<=dados.F; f++) {
+    row_count++;
+    glp_set_row_bnds(mip, row_count, GLP_UP, 0.0, 0.0);
 
+    for (int j=1; j<=dados.J; j++) {
+      count++;
+      ia[count] = row_count;
+      ja[count] = z_idx[f-1][j-1];
+      ar[count] = 1;
+    }
 
+    count++;
+    ia[count] = row_count;
+    ja[count] = y_idx[f-1];
+    ar[count] = -dados.h[f-1];
+  }
+
+  // r3: Conservação de fluxo no CD
+  glp_add_rows(mip, dados.F);
+  for (int f=1; f<=dados.F; f++) {
+    row_count++;
+    glp_set_row_bnds(mip, row_count, GLP_FX, 0.0, 0.0);
+
+    for (int i=1; i<=dados.I; i++) {
+      count++;
+      ia[count] = row_count;
+      ja[count] = x_idx[i-1][f-1];
+      ar[count] = 1;
+    }
+
+    for (int j=1; j<=dados.J; j++) {
+      count++;
+      ia[count] = row_count;
+      ja[count] = z_idx[f-1][j-1];
+      ar[count] = -1;
+    }
+  }
+
+  // r4: Capacidade de produção da fábrica
+  glp_add_rows(mip, dados.I);
+  for (int i=1; i<=dados.I; i++) {
+    row_count++;
+    glp_set_row_bnds(mip, row_count, GLP_UP, 0.0, dados.p[i-1]);
+
+    for (int f=1; f<=dados.F; f++) {
+      count++;
+      ia[count] = row_count;
+      ja[count] = x_idx[i-1][f-1];
+      ar[count] = 1;
+    }
+  }
+
+  // Carregando modelo
+  glp_load_matrix(mip ,count, ia, ja, ar);
+
+  // Desalocando
+  for (int i=0; i<dados.I; i++) {
+    delete[] x_idx[i];
+  }
+  delete[] x_idx;
+
+  for (int f=0; f<dados.F; f++) {
+    delete[] z_idx[f];
+  }
+  delete[] z_idx;
+  delete[] y_idx;
+
+  delete[] ia;
+  delete[] ja;
+  delete[] ar;
+}
+
+MIPSolver::~MIPSolver() {
   glp_delete_prob(mip);
+}
+
+void MIPSolver::resolve() {
+  glp_iocp params;
+
+  glp_init_iocp(&params);
+  params.presolve = GLP_ON;
+  params.msg_lev = GLP_MSG_OFF;
+  params.tm_lim = 600000;
+  params.cb_func = get_info;
+  params.cb_info = &mip_gap;
+
+  glp_intopt(mip, &params);
+  func_obj = glp_mip_obj_val(mip);
+  if (glp_mip_status(mip) == GLP_OPT) {
+    mip_gap = 0;
+  }
 }

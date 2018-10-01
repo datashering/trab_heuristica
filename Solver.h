@@ -4,8 +4,9 @@
 #include <vector>
 #include <limits>
 #include <iostream>
-#include "Instancia.h"
+#include "Uteis.h"
 
+//  --- Constantes e Typedef  ---
 const double MAX = std::numeric_limits<double>::max();
 
 struct Indice {
@@ -26,5 +27,18 @@ public:
   void resolve();
   void abre_cd(int, Instancia&);
   void fecha_cd(int, Instancia&);
-  //void atualiza_sol(Solucao&);
+  void atualiza_sol(Solucao&);
+};
+
+class MIPSolver {
+public:
+
+  glp_prob *mip;                 // glpk
+  double func_obj;               // Função Objetivo
+  double mip_gap;                // gap
+
+  MIPSolver(Instancia&);
+  ~MIPSolver();
+
+  void resolve();
 };

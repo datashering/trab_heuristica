@@ -1,6 +1,17 @@
 #include <fstream>
 #include <iostream>
-#include "Instancia.h"
+#include "Uteis.h"
+
+//TODO
+Solucao::Solucao(int I, int F, int J)
+{
+
+}
+//TODO
+Solucao::~Solucao()
+{
+
+}
 
 Instancia::Instancia(const char *nome)
 {

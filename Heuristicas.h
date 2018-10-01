@@ -2,6 +2,9 @@
 
 #include <iostream>
 #include <vector>
+#include "Uteis.h"
+
+//  --- Heuristica Gulosa ---
 
 struct CD
 {
@@ -28,3 +31,21 @@ bool Compara_Custo(const CD& c1, const CD& c2);
 void Gera_Custo(Inst& inst, Candidatos& cand);
 
 void Gera_Sol(Inst& inst);
+
+
+//  --- Heuristica Drop ---
+
+Solucao Drop(Instancia&);
+
+//TODO
+void Balancea_Instancia(Instancia&, std::vector<bool>&);
+
+//TODO
+//  --- Heuristica Add  ---
+
+//  --- Heuristica Iterativa da Mochila ---
+
+void problema_atedimento(Instancia &dados, std::vector<double> &custos, std::vector<bool> &sol);
+
+//TODO
+void HIM();
