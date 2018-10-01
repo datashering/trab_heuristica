@@ -2,15 +2,36 @@
 #include <iostream>
 #include "Uteis.h"
 
-//TODO
 Solucao::Solucao(int I, int F, int J)
 {
-
+  y.resize(F);
+  x = new double*[I];
+  for (int i = 0; i < I; i++)
+  {
+    x[i] = new double[F];
+  }
+  z = new double*[F]
+  for (int i = 0; i < F; i++)
+  {
+    z[i] = new double[J];
+  }
 }
-//TODO
+
 Solucao::~Solucao()
 {
+  //Desalocando o vetor de custo variavel c
+  for (int i = 0; i < I; i++)
+  {
+    delete[] x[i];
+  }
+  delete[] x;
 
+  //Desalocando o vetor de custo variavel t
+  for (int i = 0; i < F; i++)
+  {
+    delete[] z[i];
+  }
+  delete[] z;
 }
 
 Instancia::Instancia(const char *nome)

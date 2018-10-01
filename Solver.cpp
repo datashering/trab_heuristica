@@ -178,6 +178,8 @@ void LPSolver::resolve() {
   params.msg_lev = GLP_MSG_OFF;
   //params.tm_lim = 180;
 
+  //TODO
+  //Verificar a flag para o caso do problema ser inviavel
   glp_simplex(lp, &params);
   func_obj = glp_get_obj_val(lp);
 
@@ -202,6 +204,14 @@ void LPSolver::fecha_cd(int idx, Instancia &dados) {
 
 //TODO
 void LPSolver::atualiza_sol(Solucao &Sol) {
+  //Atualizando Funcao objetivo da solucao
+  Sol.func_obj = func_obj;
+  //Atualizando Vetor de facilidades abertas
+  for (int i = 0; i < Sol.F; i++)
+  {
+    
+  }
+
 
 }
 
