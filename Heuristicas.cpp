@@ -29,8 +29,8 @@ void Balancea_Instancia(Instancia& dados, std::vector<bool>& abertas)
 Solucao Drop(Instancia& dados)
 {
   //Sao criadas as structs para armazenar a melhor solucao de uma iteracao assim como a melhor atual
-  Solucao Melhor_Sol = Drop_Sol(dados.F);
-  Solucao Sol_atual = Drop_Sol(dados.F);
+  Solucao Melhor_Sol = Solucao(dados.F);
+  Solucao Sol_atual = Solucao(dados.F);
   //E criado um vetor para avaliar a melhoria na solucao para cada facilidade fechada
   std::vector<bool> abertas (dados.F, 1);
   double resultado;
@@ -149,58 +149,25 @@ void Gera_Sol(Inst& inst)
 
 //  --- Heuristica Iterativa da Mochila ---
 
-void problema_atedimento(Instancia &dados, std::vector<double> &custos, std::vector<bool> &sol) {
-  int k = dados.F;
-  int demanda = std::ceil(std::accumulate(dados.d.begin(), dados.d.end(), 0.0));
+ProgDinamica::ProgDinamica(Instancia &dados) {
+  k = dados.F;
+  demanda = std::ceil(std::accumulate(dados.d.begin(), dados.d.end(), 0.0));
+  capacidades.resize(dados.k)
+  for (int i=0; i<k; i++) {
+    capacidades[i] = std::floor(dados.h[i]);
+  }
+  sol.resize(dados.k);
+  custos.resize(dados.k);
 
-  double **opt = new double*[k];
-  bool **opt_sol = new bool*[k];
-
+  opt = new double*[k];
+  opt_sol = new bool*[k];
   for (int i=0; i<k; i++) {
     opt[i] = new double[demanda + 1];
     opt_sol[i] = new bool[demanda + 1];
   }
+}
 
-  opt[0][0] = 0;
-  opt_sol[0][0] = 0;
-  for (int j=1; j<=demanda; j++) {
-    if (j > dados.h[0]) {
-      opt[0][j] = MAX;
-    }
-
-    else {
-      opt[0][j] = custos[0];
-      opt_sol[0][j] = 1;
-    }
-  }
-
-  int resto;
-  for (int i=1; i<k; i++) {
-    opt[i][0] = 0;
-    opt_sol[i][0] = 0;
-    for (int j=1; j<=demanda; j++) {
-      resto = std::max(0.0, std::floor(j - dados.h[i]));
-      if (opt[i-1][j] > opt[i-1][resto] + custos[i]) {
-        opt[i][j] = opt[i-1][resto] + custos[i];
-        opt_sol[i][j] = 1;
-      }
-      else {
-        opt[i][j] = opt[i-1][j];
-        opt_sol[i][j] = 0;
-      }
-    }
-  }
-
-  resto = demanda;
-  for (int i=k-1; i>=0; i--) {
-    sol[i] = opt_sol[i][resto];
-
-    if (sol[i]) {
-      resto = std::max(0.0, std::floor(resto - dados.h[i]));
-    }
-  }
-  double func_obj = opt[k-1][demanda];
-
+ProgDinamica::~ProgDinamica() {
   for (int i=0; i<k; i++) {
     delete[] opt[i];
     delete[] opt_sol[i];
@@ -209,14 +176,63 @@ void problema_atedimento(Instancia &dados, std::vector<double> &custos, std::vec
   delete[] opt_sol;
 }
 
-//TODO
-void HIM() {
-  Instancia dados("instancias_c/batch1/3-40-30-30-2.0");
-  LPSolver solver(dados);
-  std::vector<bool> sol(dados.F);
-  std::vector<double> custos(dados.b);
+void ProgDinamica::resolve() {
+  // Caso base
+  opt[0][0] = 0;      // Se a demanda = 0 -> opt = 0
+  opt_sol[0][0] = 0;  // Nao abre CD
+  for (int d=1; d<=demanda; d++) {
+    // Se a demanda > capacidade problema inviavel
+    if (d > capacidades[0]) {
+      opt[0][j] = MAX;
+    }
+    // Se a demanda < capacidade abre CD
+    else {
+      opt[0][d] = custos[0];
+      opt_sol[0][d] = 1;
+    }
+  }
 
-  problema_atedimento(dados, custos, sol);
+  // Caso geral
+  int resto;
+  for (int i=1; i<k; i++) {
+    opt[i][0] = 0;      // Se a demanda = 0, opt = 0
+    opt_sol[i][0] = 0;  // Nao abre CD
+
+    for (int j=1; j<=demanda; j++) {
+      resto = std::max(0.0, j - capacidades[i]);
+
+      if (opt[i-1][j] > opt[i-1][resto] + custos[i]) {
+        // Abre CD
+        opt[i][j] = opt[i-1][resto] + custos[i];
+        opt_sol[i][j] = 1;
+      }
+
+      else {
+        // Nao abre CD
+        opt[i][j] = opt[i-1][j];
+        opt_sol[i][j] = 0;
+      }
+    }
+  }
+
+  // Reconstruindo solucao
+  double func_obj = 0;
+
+  resto = demanda;
+  for (int i=k-1; i>=0; i--) {
+    sol[i] = opt_sol[i][resto];
+
+    if (sol[i]) {
+      resto = std::max(0.0, resto - capacidades[i]);
+    }
+  }
+}
+
+void heuristica_iterativa(Instancia &dados) {
+  ProgDinamica pd(dados);
+  LPSolver solver(dados);
+
+  pd.resolve();
 
   double demanda = std::accumulate(dados.d.begin(), dados.d.end(), 0.0);
   double oferta = 0;
@@ -237,7 +253,6 @@ void HIM() {
       solver.fecha_cd(i, dados);
     }
   }
-
   solver.resolve();
 
   std::cout << func_obj + solver.func_obj << std::endl;

@@ -5,5 +5,5 @@ instancias_mod/*
 a.out
 out
 exe
-testmain.cpp
 testemain.cpp
+experimento.cpp

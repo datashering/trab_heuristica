@@ -30,4 +30,4 @@ struct Solucao
   Solucao(int, int, int);
 
   ~Solucao();
-}
+};

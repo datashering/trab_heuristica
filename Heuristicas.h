@@ -10,7 +10,7 @@ struct CD
 {
   int cd;
   double custo;
-}
+};
 
 struct Candidatos
 {
@@ -28,9 +28,9 @@ struct Candidatos
 
 bool Compara_Custo(const CD& c1, const CD& c2);
 
-void Gera_Custo(Inst& inst, Candidatos& cand);
+void Gera_Custo(Instancia& inst, Candidatos& cand);
 
-void Gera_Sol(Inst& inst);
+void Gera_Sol(Instancia& inst);
 
 
 //  --- Heuristica Drop ---
@@ -45,7 +45,19 @@ void Balancea_Instancia(Instancia&, std::vector<bool>&);
 
 //  --- Heuristica Iterativa da Mochila ---
 
-void problema_atedimento(Instancia &dados, std::vector<double> &custos, std::vector<bool> &sol);
+struct ProgDinamica {
+  int k;
+  int demanda;
+  std::vector<double> custos;
+  std::vector<int> capacidades;
+  std::vector<bool> sol;
 
-//TODO
-void HIM();
+  double **opt;
+  bool **opt_sol;
+
+  ProgDinamica(Instancia&);
+  ~ProgDinamica();
+  void resolve();
+};
+
+void heuristica_iterativa (Instancia &dados);
