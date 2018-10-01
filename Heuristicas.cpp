@@ -9,11 +9,6 @@
 
 //  --- Heuristica Drop ---
 
-/*
-  A funcao Resolve_PDT(vector<bool>, int) resolvera o problema do transporte e retornara o valor da FO
-  para aquele vetor de facilidades abertas
-*/
-
 //TODO
 /*Funcao que servira para balancear a instancia para a solucao do PDT, nao sei se e
 necessario no caso da DROP, se auxilia ou se nao muda para o solver, de qlq maneira
@@ -29,44 +24,51 @@ void Balancea_Instancia(Instancia& dados, std::vector<bool>& abertas)
 Solucao Drop(Instancia& dados)
 {
   //Sao criadas as structs para armazenar a melhor solucao de uma iteracao assim como a melhor atual
-  Solucao Melhor_Sol = Drop_Sol(dados.F);
-  Solucao Sol_atual = Drop_Sol(dados.F);
+  Solucao Melhor_Sol = Solucao(dados.I, dados.F, dados.J);
+  //E criada uma classe LPSolver para chamar o solver para resolver o problema do transporte
+  LPSolver Solver(dados);
   //E criado um vetor para avaliar a melhoria na solucao para cada facilidade fechada
   std::vector<bool> abertas (dados.F, 1);
-  double resultado;
-  //E carregado o problema do transporte no GLPK, a partir do qual sera realizada variacoes nas facilidades abertas
-  LPSolver(dados);
+  int indice;
+  bool flag = false;
 
-  Melhor_Sol.FO = Resolve_PDT(abertas, dados);
+  //E resolvido o problema do transporte com todas as facilidades abertas para se obter uma solucao inicial
+  Solver.resolve();
+  Solver.atualiza_sol(Melhor_Sol);
 
   do
   {
     //Para a solucao atual e verificado o efeito de se fechar todas as facilidades separadamente,
     //avaliando qual delas resulta o maior ganho
-    Sol_atual = Melhor_Sol;
-    abertas = Sol_atual.facilidades;
+    abertas = Melhor_Sol.facilidades;
     for (int i = 0; i < dados.F; i++)
     {
       //E avaliada a nova solucao apenas se a facilidade estiver aberta, caso contrario nao ha necessidade calcular
       if (abertas[i] == 1)
       {
         //Fecha-se a facilidade i
-        abertas[i] = 0;
+        Solver.fecha_cd(i, dados);
 
         //E chamada a funcao para resolver o problema do transporte para o vetor atual que retorna a FO
-        resultado = Resolve_PDT(abertas, dados);
-        if (resultado < Melhor_Sol.FO)
+        Solver.resolve();
+        if (Solver.func_obj < Melhor_Sol.func_obj)
         {
-          Melhor_Sol.FO = resultado;
-          Melhor_Sol.facilidades = abertas;
+          indice = i;
+          atualiza_sol(Melhor_Sol);
+          flag = true;
         }
         //Volta-se a abrir a facilidade i para avaliar o impacto da proxima
-        abertas[i] = 1;
+        Solver.abre_cd(i, dados);
       }
+    }
+    //Apos o termino da execucao caso a solucao tenha melhorado e atualizado no solver os indices da melhor solucao
+    if (flag)
+    {
+      Solver.fecha_cd(indice, dados);
     }
   }
   //Enquanto fechar facilidade gerar reducao de custos continua-se o procedimento
-  while (Melhor_Sol < Sol_atual);
+  while (flag);
 }
 
 //TODO
