@@ -1,8 +1,8 @@
 #include <fstream>
 #include <iostream>
-#include "Inst.h"
+#include "Instancia.h"
 
-Inst::Inst(const char *nome)
+Instancia::Instancia(const char *nome)
 {
   std::ifstream file;
   file.open(nome);
@@ -11,7 +11,7 @@ Inst::Inst(const char *nome)
   if (!file)
   {
     std::cout << "Erro na abertura do arquivo!!" << std::endl;
-    return;
+    exit(0);
   }
   //Lendo quantos pontos de oferta, CD e demanda que a instancia tem
   file >> I >> F >> J;
@@ -38,25 +38,25 @@ Inst::Inst(const char *nome)
   for (int i = 0; i < I; i++)
   {
     file >> p[i];
-    std::cout << "Fabrica[" << i+1 << "]: " << p[i] << std::endl;
+    //std::cout << "Fabrica[" << i+1 << "]: " << p[i] << std::endl;
   }
   //Lendo a capacidade do CD
   for (int i = 0; i < F; i++)
   {
     file >> h[i];
-    std::cout << "Capacidade[" << i+1 << "]: " << h[i] << std::endl;
+    //std::cout << "Capacidade[" << i+1 << "]: " << h[i] << std::endl;
   }
   //Lendo a demanda
   for (int i = 0; i < J; i++)
   {
     file >> d[i];
-    std::cout << "Demanda[" << i+1 << "]: " << d[i] << std::endl;
+    //std::cout << "Demanda[" << i+1 << "]: " << d[i] << std::endl;
   }
   //Lendo o custo fixo de abertura
   for (int i = 0; i < F; i++)
   {
     file >> b[i];
-    std::cout << "Custo Fixo[" << i+1 << "]: " << b[i] << std::endl;
+    //std::cout << "Custo Fixo[" << i+1 << "]: " << b[i] << std::endl;
   }
   //Lendo o custo c, de I para F
   for (int i = 0; i < I; i++)
@@ -64,7 +64,7 @@ Inst::Inst(const char *nome)
     for (int j = 0; j < F; j++)
     {
       file >> c[i][j];
-      std::cout << "Custo Variavel C[" << i+1 << "][" << j+1 << "]:" << c[i][j] << std::endl;
+      //std::cout << "Custo Variavel C[" << i+1 << "][" << j+1 << "]:" << c[i][j] << std::endl;
     }
   }
   //Lendo o custo t, de F para J
@@ -73,13 +73,13 @@ Inst::Inst(const char *nome)
     for (int j = 0; j < J; j++)
     {
       file >> t[i][j];
-      std::cout << "Custo Variavel T[" << i+1 << "][" << j+1 << "]:" << t[i][j] << std::endl;
+      //std::cout << "Custo Variavel T[" << i+1 << "][" << j+1 << "]:" << t[i][j] << std::endl;
     }
   }
   file.close();
 }
 
-Inst::~Inst()
+Instancia::~Instancia()
 {
   //Desalocando o vetor de custo variavel c
   for (int i = 0; i < I; i++)

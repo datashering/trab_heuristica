@@ -15,7 +15,7 @@ struct Instancia
   double **c;                    //Custo de transporte unitario de uma fabrica pra um CD
   double **t;                    //Custo de transporter unitario de um CD para um ponto de demanda
 
-  Instancia(const char*);
+  Instancia(const char *nome);
 
   ~Instancia();
 };
