@@ -28,19 +28,19 @@ void Drop(Instancia& dados)
   //E criada uma classe LPSolver para chamar o solver para resolver o problema do transporte
   LPSolver solver(dados);
   //E criado um vetor para avaliar a melhoria na solucao para cada facilidade fechada
-  std::vector<bool> abertas (dados.F, true);
+  std::vector<bool> abertas (dados.F, 1);
   int indice;
   double custos_fixos = 0, fo_temp = 0, demand = 0, capac = 0;
   bool flag;
 
   //E resolvido o problema do transporte com todas as facilidades abertas para se obter uma solucao inicial
-  solver.resolve(dados);
-  std::cout << "Funcao Objetivo Solver: " << solver.func_obj << std::endl;
-  //solver.atualiza_sol(melhor_sol);
+  solver.resolve();
+  solver.atualiza_sol(melhor_sol);
 
+  //Adiciona-se o custo fixo por abrir todas as facilidades a Solucao
   for (int i = 0; i < dados.F; i++)
   {
-    if(abertas[i] == true)
+    if(abertas[i] == 1)
     {
       custos_fixos = custos_fixos + dados.b[i];
     }
@@ -53,41 +53,34 @@ void Drop(Instancia& dados)
     //Para a solucao atual e verificado o efeito de se fechar todas as facilidades separadamente,
     //avaliando qual delas resulta o maior ganho
     flag = false;
-    //std::cout << solver.func_obj << std::endl;
-    //abertas = melhor_sol.y;
+
     for (int i = 0; i < dados.F; i++)
     {
-      custos_fixos = 0;
       //E avaliada a nova solucao apenas se a facilidade estiver aberta, caso contrario nao ha necessidade calcular
-      if (abertas[i] == true)
+      if (abertas[i] == 1)
       {
         //std::cout <<"ENTOUR: " << i << std::endl;
         //Fecha-se a facilidade i
         solver.fecha_cd(i, dados);
         abertas[i] = 0;
+        custos_fixos = custos_fixos - dados.b[i];
 
         //E chamada a funcao para resolver o problema do transporte para o vetor atual que retorna a FO
-        solver.resolve(dados);
+        solver.resolve();
 
-        for (int j = 0; j < dados.F; j++)
-        {
-          if(abertas[j] == true)
-          {
-            custos_fixos = custos_fixos + dados.b[j];
-          }
-        }
         fo_temp = solver.func_obj + custos_fixos;
         //std::cout << "FUNC : " << fo_temp << std::endl;
         if (fo_temp < melhor_sol.func_obj)
         {
           indice = i;
-          //solver.atualiza_sol(melhor_sol);
+          solver.atualiza_sol(melhor_sol);
           melhor_sol.func_obj = fo_temp;
           flag = true;
         }
         //Volta-se a abrir a facilidade i para avaliar o impacto da proxima
         solver.abre_cd(i, dados);
         abertas[i] = 1;
+        custos_fixos = custos_fixos + dados.b[i];
       }
     }
     //Apos o termino da execucao caso a solucao tenha melhorado e atualizado no solver os indices da melhor solucao
@@ -95,13 +88,13 @@ void Drop(Instancia& dados)
     {
       solver.fecha_cd(indice, dados);
       abertas[indice] = 0;
+      custos_fixos = custos_fixos - dados.b[indice];
     }
   }
   //Enquanto fechar facilidade gerar reducao de custos continua-se o procedimento
   while (flag);
 
   //Prints para verificar a solucao, seria melhor fazer uma funcao para isso no Instancia.h
-
   std::cout << "Funcao Objetivo FInal: " << melhor_sol.func_obj << std::endl;
   for (int i = 0; i < dados.F; i++)
   {
@@ -120,20 +113,92 @@ void Drop(Instancia& dados)
 
   std::cout << "CAPCADIDADE: " << capac << "DEMANDA: " << demand << std::endl;
 
-
 }
 
 //TODO
 //  --- Heuristica Add ---
 
-//  --- Heuristica Gulosa ---
-
 //Funcao que compara dois custos de structs CDs e retorna qual o maior, sera usada no sort
 bool Compara_Custo(const CD& c1, const CD& c2)
 {
   return c1.custo < c2.custo;
+}
+
+//Funcao que inicializa a Add a partir de algum dos criterios definidos (1: Ordem decrescente de capacidade,
+//2: Ordem crescente de custo fixo/capacidade)
+void inicia_Add(Instancia& dados, std::vector<CD>& candi, int metodo)
+{
+  //Criterio que ordena pela capacidade dos CDs em ordem decrescente
+  if (metodo == 1)
+  {
+    for (int i = 0; i < dados.F; i++)
+    {
+      candi[i].cd = i;
+      candi[i].custo = dados.h[i];
+    }
+    //Ordena o vetor pela capacidade de cada CD
+    std::sort (cand.begin(), cand.end(), Compara_Custo);
+  }
+
+  if (metodo == 2)
+  {
+    for (int i = 0; i < dados.F; i++)
+    {
+      candi[i].cd = i;
+      candi[i].custo = dados.h[i]/dados.b[i];
+    }
+    //Ordena o vetor pela razao da capacidade e custo de cada CD
+    std::sort (cand.begin(), cand.end(), Compara_Custo);
+  }
 
 }
+
+void Add(Instancia& dados)
+{
+  LPSolver solver(dados);
+  Solucao melhor_sol = Solucao(dados.I, dados.F, dados.J);
+  std::vector<bool> abertas (dados.F, 0);
+  bool flag;
+  double custos_fixos = 0, fo_temp = 0;
+  //Fecha-se todas as facilidades no modelo do GLPK, com excecao da ultima que sera o CD artificial
+  for (int i = 0; i < dados.F - 1; i++)
+  {
+    solver.fecha_cd(i, dados);
+  }
+  solver.resolve();
+  //Obtem-se uma solucao apenas com a ultima (artificial) aberta
+  melhor_sol.func_obj = solver.func_obj;
+  //Sao abertas facilidades ate que nao gere uma reducao no custo total do problema
+  do
+  {
+    flag = false;
+    //Percorre-se todas as facilidades com excessao da ultima
+    for (int i = 0; i < dados.F - 1; i++)
+    {
+      //Caso a facilidade esteja fechada avalia-se o custo de abri-la
+      if (abertas[i] ==  0)
+      {
+        solver.abre_cd(i, dados);
+        abertas[i] = 1;
+        custos_fixos = custos_fixos + dados.b[i];
+
+        solver.resolve();
+        fo_temp = solver.func_obj + custos_fixos;
+
+        //O = e necessario pois nas primeiras iteracoes o custo ficara como MAX, entao deve-se atualizar
+        if (fo_temp <= melhor_sol.func_obj)
+        {
+
+        }
+      }
+    }
+  }
+  while (flag);
+}
+
+
+//  --- Heuristica Gulosa ---
+
 
 //Construtor da struct Candidatos
 Candidatos::Candidatos(int tam): tamanho(tam)

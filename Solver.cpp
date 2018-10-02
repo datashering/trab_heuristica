@@ -183,16 +183,10 @@ void LPSolver::resolve() {
   glp_simplex(lp, &params);
   glp_status = glp_get_status(lp);
 
-  for (int i = dados.J + 1; i < dados.J + dados.F + 1; i++)
-  {
-    std::cout << "Capcadidade: " << glp_get_row_ub(lp, i) << std::endl;
-  }
   //Funcao que retorna status sobre viabilidade do problema
-  std::cout << "Funcao Objetivo e: " << glp_get_obj_val(lp) << std::endl;
   if (glp_status != GLP_OPT) {
     //Atribui-se um valor extremamente a sua funcao obj
     func_obj = MAX;
-    std::cout << "Status: " << glp_status << std::endl;
   }
   else {
     func_obj = glp_get_obj_val(lp);
@@ -218,8 +212,7 @@ void LPSolver::fecha_cd(int idx, Instancia &dados) {
 
 //TOCHECK
 void LPSolver::atualiza_sol(Solucao &sol) {
-  //Atualizando Funcao objetivo da solucao
-  sol.func_obj = func_obj;
+
   //Atualizando Vetor de facilidades abertas
   for (int i = sol.J + 1; i < sol.J + sol.F + 1; i++)
   {
