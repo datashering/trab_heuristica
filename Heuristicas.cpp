@@ -21,54 +21,106 @@ void Balancea_Instancia(Instancia& dados, std::vector<bool>& abertas)
 */
 
 //Funcao que retorna qual vetor de facilidades abertas gerara a melhor FO a partir do criterio DROP
-Solucao Drop(Instancia& dados)
+void Drop(Instancia& dados)
 {
   //Sao criadas as structs para armazenar a melhor solucao de uma iteracao assim como a melhor atual
-  Solucao Melhor_Sol = Solucao(dados.I, dados.F, dados.J);
+  Solucao melhor_sol = Solucao(dados.I, dados.F, dados.J);
   //E criada uma classe LPSolver para chamar o solver para resolver o problema do transporte
   LPSolver solver(dados);
   //E criado um vetor para avaliar a melhoria na solucao para cada facilidade fechada
-  std::vector<bool> abertas (dados.F, 1);
+  std::vector<bool> abertas (dados.F, true);
   int indice;
-  bool flag = false;
+  double custos_fixos = 0, fo_temp = 0, demand = 0, capac = 0;
+  bool flag;
 
   //E resolvido o problema do transporte com todas as facilidades abertas para se obter uma solucao inicial
-  solver.resolve();
-  solver.atualiza_sol(Melhor_Sol);
+  solver.resolve(dados);
+  std::cout << "Funcao Objetivo Solver: " << solver.func_obj << std::endl;
+  //solver.atualiza_sol(melhor_sol);
+
+  for (int i = 0; i < dados.F; i++)
+  {
+    if(abertas[i] == true)
+    {
+      custos_fixos = custos_fixos + dados.b[i];
+    }
+  }
+  melhor_sol.func_obj = solver.func_obj + custos_fixos;
+  std::cout << "Funcao Objetivo: " << melhor_sol.func_obj << std::endl;
 
   do
   {
     //Para a solucao atual e verificado o efeito de se fechar todas as facilidades separadamente,
     //avaliando qual delas resulta o maior ganho
-    abertas = Melhor_Sol.y;
+    flag = false;
+    //std::cout << solver.func_obj << std::endl;
+    //abertas = melhor_sol.y;
     for (int i = 0; i < dados.F; i++)
     {
+      custos_fixos = 0;
       //E avaliada a nova solucao apenas se a facilidade estiver aberta, caso contrario nao ha necessidade calcular
-      if (abertas[i] == 1)
+      if (abertas[i] == true)
       {
+        //std::cout <<"ENTOUR: " << i << std::endl;
         //Fecha-se a facilidade i
         solver.fecha_cd(i, dados);
+        abertas[i] = 0;
 
         //E chamada a funcao para resolver o problema do transporte para o vetor atual que retorna a FO
-        solver.resolve();
-        if (solver.func_obj < Melhor_Sol.func_obj)
+        solver.resolve(dados);
+
+        for (int j = 0; j < dados.F; j++)
+        {
+          if(abertas[j] == true)
+          {
+            custos_fixos = custos_fixos + dados.b[j];
+          }
+        }
+        fo_temp = solver.func_obj + custos_fixos;
+        //std::cout << "FUNC : " << fo_temp << std::endl;
+        if (fo_temp < melhor_sol.func_obj)
         {
           indice = i;
-          solver.atualiza_sol(Melhor_Sol);
+          //solver.atualiza_sol(melhor_sol);
+          melhor_sol.func_obj = fo_temp;
           flag = true;
         }
         //Volta-se a abrir a facilidade i para avaliar o impacto da proxima
         solver.abre_cd(i, dados);
+        abertas[i] = 1;
       }
     }
     //Apos o termino da execucao caso a solucao tenha melhorado e atualizado no solver os indices da melhor solucao
     if (flag)
     {
       solver.fecha_cd(indice, dados);
+      abertas[indice] = 0;
     }
   }
   //Enquanto fechar facilidade gerar reducao de custos continua-se o procedimento
   while (flag);
+
+  //Prints para verificar a solucao, seria melhor fazer uma funcao para isso no Instancia.h
+
+  std::cout << "Funcao Objetivo FInal: " << melhor_sol.func_obj << std::endl;
+  for (int i = 0; i < dados.F; i++)
+  {
+    //std::cout << "Facilidades abertas: " << abertas[i] << std::endl;
+    if (abertas[i] == 1)
+    {
+      capac = capac + dados.h[i];
+      std::cout << "CAPACIDADE DE " << i << ": " << dados.h[i] << std::endl;
+      std::cout << "Custo DE aber " << i << ": " << dados.b[i] << std::endl;
+    }
+  }
+  for (int j = 0; j < dados.J; j++)
+  {
+    demand = demand + dados.d[j];
+  }
+
+  std::cout << "CAPCADIDADE: " << capac << "DEMANDA: " << demand << std::endl;
+
+
 }
 
 //TODO
@@ -80,6 +132,7 @@ Solucao Drop(Instancia& dados)
 bool Compara_Custo(const CD& c1, const CD& c2)
 {
   return c1.custo < c2.custo;
+
 }
 
 //Construtor da struct Candidatos

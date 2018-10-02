@@ -35,7 +35,7 @@ void Gera_Sol(Instancia& inst);
 
 //  --- Heuristica Drop ---
 
-Solucao Drop(Instancia&);
+void Drop(Instancia&);
 
 //TODO
 void Balancea_Instancia(Instancia&, std::vector<bool>&);
