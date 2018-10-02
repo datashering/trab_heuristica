@@ -170,7 +170,7 @@ LPSolver::~LPSolver() {
   glp_delete_prob(lp);
 }
 //Deve verificar se o get_status retorna da forma como escrita
-void LPSolver::resolve(Instancia &dados) {
+void LPSolver::resolve() {
   glp_smcp params;
   int glp_status;
 
