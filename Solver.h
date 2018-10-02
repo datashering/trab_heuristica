@@ -28,8 +28,7 @@ public:
   void abre_cd(int, Instancia&);
   void fecha_cd(int, Instancia&);
   void atualiza_sol(Solucao&);
-  //TODO
-  void atualiza_custos(std::vector<double>&);
+  void atualiza_custos(Instancia&, std::vector<double>&, float);
 };
 
 class MIPSolver {

@@ -229,26 +229,39 @@ void ProgDinamica::resolve() {
   }
 }
 
-double heuristica_iterativa(Instancia &dados) {
+double heuristica_iterativa(Instancia &dados, float alpha) {
   ProgDinamica pd(dados);
   LPSolver solver(dados);
   double current_of, best_of = MAX;
+  int best_idx;
 
   pd.custos = dados.b;
-  pd.resolve();
 
-  current_of = 0;
-  for (int i=0; i<dados.F; i++) {
-    if (pd.sol[i]) {
-      solver.abre_cd(i, dados);
-      current_of += dados.b[i];
+  for (int i=0; i<100; i++) {
+    pd.resolve();
+    current_of = 0;
+    for (int i=0; i<dados.F; i++) {
+      if (pd.sol[i]) {
+        solver.abre_cd(i, dados);
+        current_of += dados.b[i];
+      }
+      else {
+        solver.fecha_cd(i, dados);
+      }
     }
-    else {
-      solver.fecha_cd(i, dados);
+    solver.resolve();
+    solver.atualiza_custos(dados, pd.custos, alpha);
+    // std::cout << current_of << " ";
+    current_of += solver.func_obj;
+    // std::cout << i << ": " << current_of << std::endl;
+
+    if (current_of < best_of) {
+      best_of = current_of;
+      best_idx = i;
     }
   }
-  solver.resolve();
-  current_of += solver.func_obj;
 
-  return current_of;
+  std::cout << best_idx << std::endl;
+
+  return best_of;
 }

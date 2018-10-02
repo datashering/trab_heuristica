@@ -60,4 +60,4 @@ struct ProgDinamica {
   void resolve();
 };
 
-double heuristica_iterativa (Instancia &dados);
+double heuristica_iterativa(Instancia&, float);
