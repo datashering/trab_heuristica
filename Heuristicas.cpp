@@ -126,32 +126,32 @@ bool Compara_Custo(const CD& c1, const CD& c2)
 
 //Funcao que inicializa a Add a partir de algum dos criterios definidos (1: Ordem decrescente de capacidade,
 //2: Ordem crescente de custo fixo/capacidade)
-void inicia_Add(Instancia& dados, std::vector<CD>& candi, int metodo)
-{
-  //Criterio que ordena pela capacidade dos CDs em ordem decrescente
-  if (metodo == 1)
-  {
-    for (int i = 0; i < dados.F; i++)
-    {
-      candi[i].cd = i;
-      candi[i].custo = dados.h[i];
-    }
-    //Ordena o vetor pela capacidade de cada CD
-    std::sort (cand.begin(), cand.end(), Compara_Custo);
-  }
-
-  if (metodo == 2)
-  {
-    for (int i = 0; i < dados.F; i++)
-    {
-      candi[i].cd = i;
-      candi[i].custo = dados.h[i]/dados.b[i];
-    }
-    //Ordena o vetor pela razao da capacidade e custo de cada CD
-    std::sort (cand.begin(), cand.end(), Compara_Custo);
-  }
-
-}
+// void inicia_Add(Instancia& dados, std::vector<CD>& candi, int metodo)
+// {
+//   //Criterio que ordena pela capacidade dos CDs em ordem decrescente
+//   if (metodo == 1)
+//   {
+//     for (int i = 0; i < dados.F; i++)
+//     {
+//       candi[i].cd = i;
+//       candi[i].custo = dados.h[i];
+//     }
+//     //Ordena o vetor pela capacidade de cada CD
+//     std::sort (cand.begin(), cand.end(), Compara_Custo);
+//   }
+//
+//   if (metodo == 2)
+//   {
+//     for (int i = 0; i < dados.F; i++)
+//     {
+//       candi[i].cd = i;
+//       candi[i].custo = dados.h[i]/dados.b[i];
+//     }
+//     //Ordena o vetor pela razao da capacidade e custo de cada CD
+//     std::sort (cand.begin(), cand.end(), Compara_Custo);
+//   }
+//
+// }
 
 void Add(Instancia& dados)
 {
