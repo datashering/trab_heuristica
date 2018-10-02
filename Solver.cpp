@@ -209,10 +209,15 @@ void LPSolver::atualiza_sol(Solucao &Sol) {
   //Atualizando Vetor de facilidades abertas
   for (int i = 0; i < Sol.F; i++)
   {
-    
+
   }
 
 
+}
+
+//TODO
+void atualiza_custos(std::vector<double>&) {
+  
 }
 
 //   --- Class MIPSolver ---

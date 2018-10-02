@@ -26,45 +26,45 @@ Solucao Drop(Instancia& dados)
   //Sao criadas as structs para armazenar a melhor solucao de uma iteracao assim como a melhor atual
   Solucao Melhor_Sol = Solucao(dados.I, dados.F, dados.J);
   //E criada uma classe LPSolver para chamar o solver para resolver o problema do transporte
-  LPSolver Solver(dados);
+  LPSolver solver(dados);
   //E criado um vetor para avaliar a melhoria na solucao para cada facilidade fechada
   std::vector<bool> abertas (dados.F, 1);
   int indice;
   bool flag = false;
 
   //E resolvido o problema do transporte com todas as facilidades abertas para se obter uma solucao inicial
-  Solver.resolve();
-  Solver.atualiza_sol(Melhor_Sol);
+  solver.resolve();
+  solver.atualiza_sol(Melhor_Sol);
 
   do
   {
     //Para a solucao atual e verificado o efeito de se fechar todas as facilidades separadamente,
     //avaliando qual delas resulta o maior ganho
-    abertas = Melhor_Sol.facilidades;
+    abertas = Melhor_Sol.y;
     for (int i = 0; i < dados.F; i++)
     {
       //E avaliada a nova solucao apenas se a facilidade estiver aberta, caso contrario nao ha necessidade calcular
       if (abertas[i] == 1)
       {
         //Fecha-se a facilidade i
-        Solver.fecha_cd(i, dados);
+        solver.fecha_cd(i, dados);
 
         //E chamada a funcao para resolver o problema do transporte para o vetor atual que retorna a FO
-        Solver.resolve();
-        if (Solver.func_obj < Melhor_Sol.func_obj)
+        solver.resolve();
+        if (solver.func_obj < Melhor_Sol.func_obj)
         {
           indice = i;
-          atualiza_sol(Melhor_Sol);
+          solver.atualiza_sol(Melhor_Sol);
           flag = true;
         }
         //Volta-se a abrir a facilidade i para avaliar o impacto da proxima
-        Solver.abre_cd(i, dados);
+        solver.abre_cd(i, dados);
       }
     }
     //Apos o termino da execucao caso a solucao tenha melhorado e atualizado no solver os indices da melhor solucao
     if (flag)
     {
-      Solver.fecha_cd(indice, dados);
+      solver.fecha_cd(indice, dados);
     }
   }
   //Enquanto fechar facilidade gerar reducao de custos continua-se o procedimento
@@ -83,26 +83,25 @@ bool Compara_Custo(const CD& c1, const CD& c2)
 }
 
 //Construtor da struct Candidatos
-void Candidatos::Candidatos(int tam)
+Candidatos::Candidatos(int tam): tamanho(tam)
 {
-  tam = tam;
-  viaveis.resize(Opcoes);
-  abertos.reserve(Opcoes);
+  viaveis.resize(tam);
+  abertos.reserve(tam);
   capacidade_total = 0;
 }
 
 //Funcao que gerara um custo medio para cada CD da struct Candidatos
-void Gera_Custo(Inst& inst, Candidatos& cand)
+void Gera_Custo(Instancia& inst, Candidatos& cand)
 {
   std::vector<double> custov_medio;
-  custov_medio.resize(cand.tam);
+  custov_medio.resize(cand.tamanho);
   double custo_total;
   //E salvo quantos custos variaveis existem para o calculo do custo variavel medio
-  int numero_custov = cand.I * cand.F + cand.F * cand.J;
+  int numero_custov = inst.I * inst.F + inst.F * inst.J;
 
   //Soma-se todos os custos e divide pelo total de custos variaveis (I*F + F*J), desta
   //maneira obtem-se um custo variavel medio para cada um dos CDs
-  for (int i = 0; i < cand.tam; i++)
+  for (int i = 0; i < cand.tamanho; i++)
   {
     for (int j = 0; j < inst.I; j++)
     {
@@ -115,7 +114,7 @@ void Gera_Custo(Inst& inst, Candidatos& cand)
     custov_medio[i] = custo_total/numero_custov;
   }
 
-  for (int i = 0; i < cand.tam; i++)
+  for (int i = 0; i < cand.tamanho; i++)
   {
     cand.viaveis[i].cd = i;
     cand.viaveis[i].custo = (inst.b[i]/inst.h[i] + custov_medio[i]);
@@ -123,21 +122,21 @@ void Gera_Custo(Inst& inst, Candidatos& cand)
 }
 
 //Funcao que definira quais CDs abrir e qual o custo total deles ao final
-void Gera_Sol(Inst& inst)
+void Gera_Sol(Instancia& inst)
 {
   int cont = 0;
   double demanda_total;
 
   for (int i = 0; i < inst.J; i++)
   {
-    demanda_total = demanda_total + d[i];
+    demanda_total = demanda_total + inst.d[i];
   }
   //Cria-se uma struct Candidatos com o tamanho total de Centros de Distribuicao
   Candidatos cand(inst.F);
   //Preenche-se a struct com o custo medio para cada um desses centros
-  Gera_Razao(inst, cand);
+  Gera_Custo(inst, cand);
   //Ordena-se o vetor de viaveis a partir do custo de cada CD
-  std::sort (Candidatos.viaveis.begin(), Candidatos.viaveis.end(), Compara_Custo);
+  std::sort (cand.viaveis.begin(), cand.viaveis.end(), Compara_Custo);
   //Enquanto nao tiver capacidade suficiente para se atender a demanda total sao abertos CDs
   while (cand.capacidade_total < demanda_total)
   {
@@ -154,12 +153,12 @@ void Gera_Sol(Inst& inst)
 ProgDinamica::ProgDinamica(Instancia &dados) {
   k = dados.F;
   demanda = std::ceil(std::accumulate(dados.d.begin(), dados.d.end(), 0.0));
-  capacidades.resize(dados.k)
+  capacidades.resize(k);
   for (int i=0; i<k; i++) {
     capacidades[i] = std::floor(dados.h[i]);
   }
-  sol.resize(dados.k);
-  custos.resize(dados.k);
+  sol.resize(k);
+  custos.resize(k);
 
   opt = new double*[k];
   opt_sol = new bool*[k];
@@ -185,7 +184,7 @@ void ProgDinamica::resolve() {
   for (int d=1; d<=demanda; d++) {
     // Se a demanda > capacidade problema inviavel
     if (d > capacidades[0]) {
-      opt[0][j] = MAX;
+      opt[0][d] = MAX;
     }
     // Se a demanda < capacidade abre CD
     else {
@@ -201,7 +200,7 @@ void ProgDinamica::resolve() {
     opt_sol[i][0] = 0;  // Nao abre CD
 
     for (int j=1; j<=demanda; j++) {
-      resto = std::max(0.0, j - capacidades[i]);
+      resto = std::max(0, j - capacidades[i]);
 
       if (opt[i-1][j] > opt[i-1][resto] + custos[i]) {
         // Abre CD
@@ -225,38 +224,31 @@ void ProgDinamica::resolve() {
     sol[i] = opt_sol[i][resto];
 
     if (sol[i]) {
-      resto = std::max(0.0, resto - capacidades[i]);
+      resto = std::max(0, resto - capacidades[i]);
     }
   }
 }
 
-void heuristica_iterativa(Instancia &dados) {
+double heuristica_iterativa(Instancia &dados) {
   ProgDinamica pd(dados);
   LPSolver solver(dados);
+  double current_of, best_of = MAX;
 
+  pd.custos = dados.b;
   pd.resolve();
 
-  double demanda = std::accumulate(dados.d.begin(), dados.d.end(), 0.0);
-  double oferta = 0;
+  current_of = 0;
   for (int i=0; i<dados.F; i++) {
-    if (sol[i]) {
-      oferta += dados.h[i];
-    }
-  }
-  std::cout << demanda << " - " << oferta << std::endl;
-
-  double func_obj = 0;
-  for (int i=0; i<dados.F; i++) {
-    if (sol[i]) {
+    if (pd.sol[i]) {
       solver.abre_cd(i, dados);
-      func_obj += dados.b[i];
+      current_of += dados.b[i];
     }
     else {
       solver.fecha_cd(i, dados);
     }
   }
   solver.resolve();
+  current_of += solver.func_obj;
 
-  std::cout << func_obj + solver.func_obj << std::endl;
-
+  return current_of;
 }

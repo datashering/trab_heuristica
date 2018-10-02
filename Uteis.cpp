@@ -2,7 +2,7 @@
 #include <iostream>
 #include "Uteis.h"
 
-Solucao::Solucao(int I, int F, int J)
+Solucao::Solucao(int I, int F, int J): I(I), F(F), J(J)
 {
   y.resize(F);
   x = new double*[I];
@@ -10,7 +10,7 @@ Solucao::Solucao(int I, int F, int J)
   {
     x[i] = new double[F];
   }
-  z = new double*[F]
+  z = new double*[F];
   for (int i = 0; i < F; i++)
   {
     z[i] = new double[J];
