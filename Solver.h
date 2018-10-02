@@ -24,7 +24,7 @@ public:
   LPSolver(Instancia&);
   ~LPSolver();
 
-  void resolve(Instancia&);
+  void resolve();
   void abre_cd(int, Instancia&);
   void fecha_cd(int, Instancia&);
   void atualiza_sol(Solucao&);
