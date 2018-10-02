@@ -147,6 +147,8 @@ void inicia_Add(Instancia& dados, std::vector<CD>& candi, int metodo)
       candi[i].cd = i;
       candi[i].custo = dados.h[i]/dados.b[i];
     }
+    //Ordena o vetor pela razao da capacidade e custo de cada CD
+    std::sort (cand.begin(), cand.end(), Compara_Custo);
   }
 
 }
