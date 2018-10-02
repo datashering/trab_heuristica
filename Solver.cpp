@@ -170,8 +170,9 @@ LPSolver::~LPSolver() {
   glp_delete_prob(lp);
 }
 //Deve verificar se o get_status retorna da forma como escrita
-void LPSolver::resolve() {
+void LPSolver::resolve(Instancia &dados) {
   glp_smcp params;
+  int glp_status;
 
   glp_init_smcp(&params);
   params.presolve = GLP_ON;
@@ -180,10 +181,18 @@ void LPSolver::resolve() {
 
   //Verificar a flag para o caso do problema ser inviavel
   glp_simplex(lp, &params);
+  glp_status = glp_get_status(lp);
+
+  for (int i = dados.J + 1; i < dados.J + dados.F + 1; i++)
+  {
+    std::cout << "Capcadidade: " << glp_get_row_ub(lp, i) << std::endl;
+  }
   //Funcao que retorna status sobre viabilidade do problema
-  if (glp_get_status(lp) != "GLP_OPT" || != "GLP_FEAS") {
+  std::cout << "Funcao Objetivo e: " << glp_get_obj_val(lp) << std::endl;
+  if (glp_status != GLP_OPT) {
     //Atribui-se um valor extremamente a sua funcao obj
     func_obj = MAX;
+    std::cout << "Status: " << glp_status << std::endl;
   }
   else {
     func_obj = glp_get_obj_val(lp);
@@ -207,27 +216,32 @@ void LPSolver::fecha_cd(int idx, Instancia &dados) {
   glp_set_row_bnds(lp, dados.J + idx + 1, GLP_UP, 0.0, 0.0);
 }
 
-//TODO
+//TOCHECK
 void LPSolver::atualiza_sol(Solucao &sol) {
   //Atualizando Funcao objetivo da solucao
   sol.func_obj = func_obj;
   //Atualizando Vetor de facilidades abertas
   for (int i = sol.J + 1; i < sol.J + sol.F + 1; i++)
   {
-    sol.y[i - sol.J + 1] = static_cast<bool> glp_get_row_ub(lp, i);
+    sol.y[i - sol.J + 1] = static_cast<bool> (glp_get_row_ub(lp, i));
   }
   //Atualizando as matrizes com as variveis de transporte
-  for (int i = 0; i < lp_var.size(); it++)
+  for (int i = 0; i < lp_var.size(); i++)
   {
     if (lp_var[i].name == 'x')
     {
-      sol.x[lp_var[i].idx[0]][lp_var[i].idx[1]] = glp_get_col_prim(lp, i + 1);
+      sol.x[lp_var[i].idx[0]][lp_var[i].idx[1]] = glp_get_col_prim(lp, i);
     }
     if (lp_var[i].name == 'z')
     {
-      sol.z[lp_var[i].idx[0]][lp_var[i].idx[1]] = glp_get_col_prim(lp, i + 1);
+      sol.z[lp_var[i].idx[0]][lp_var[i].idx[1]] = glp_get_col_prim(lp, i);
     }
   }
+
+}
+
+//TODO
+void atualiza_custos(std::vector<double>&) {
 
 }
 

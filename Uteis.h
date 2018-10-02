@@ -22,6 +22,7 @@ struct Instancia
 
 struct Solucao
 {
+  int I, F, J;
   double func_obj;
   std::vector<bool> y;
   double **x;
@@ -30,4 +31,4 @@ struct Solucao
   Solucao(int, int, int);
 
   ~Solucao();
-}
+};

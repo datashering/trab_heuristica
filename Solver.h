@@ -24,10 +24,12 @@ public:
   LPSolver(Instancia&);
   ~LPSolver();
 
-  void resolve();
+  void resolve(Instancia&);
   void abre_cd(int, Instancia&);
   void fecha_cd(int, Instancia&);
   void atualiza_sol(Solucao&);
+  //TODO
+  void atualiza_custos(std::vector<double>&);
 };
 
 class MIPSolver {
