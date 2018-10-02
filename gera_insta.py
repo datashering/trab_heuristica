@@ -1,6 +1,6 @@
 import numpy as np
 
-def write_instance(i, f, j, r, sub_dir=""):
+def write_instance(i, f, j, r1, r2, sub_dir=""):
     I = range(i)
     J = range(j)
     F = range(f)
@@ -12,10 +12,10 @@ def write_instance(i, f, j, r, sub_dir=""):
     b = np.random.uniform(0, 90, f) + np.random.uniform(100, 110, f) * np.sqrt(h)
 
     # Escalando oferta com demanda
-    p = p * (d.sum()*r / p.sum())
+    p = p * (d.sum()*r2 / p.sum())
 
     # Escalando capacidade com demanda
-    h = h * (d.sum()*r / h.sum())
+    h = h * (d.sum()*r1 / h.sum())
 
     I_cord = np.random.uniform(0,1,(i,2))
     F_cord = np.random.uniform(0,1,(f,2))
@@ -27,7 +27,7 @@ def write_instance(i, f, j, r, sub_dir=""):
     t = [[dist_euc(f,j)*15 for j in J_cord] for f in F_cord]
 
     # Escrevendo .dat para modelo em C
-    file_name = "instancias_c/" + sub_dir + "{:d}-{:d}-{:d}-{:.1f}".format(len(p), len(h), len(d), r)
+    file_name = "instancias_c/" + sub_dir + "{:d}-{:d}-{:d}-{:.1f}-{:.1f}".format(len(p), len(h), len(d), r1, r2)
     file = open(file_name, 'w')
     write_c(p, h, d, b, c, t, file)
     file.close()
@@ -115,20 +115,42 @@ def write_mod(p, h, d, b, c, t, file):
 
 if __name__ == "__main__":
 
-    V = range(40, 201, 40)
-    R = [1.5*i for i in range(1,6)]
+    V = range(20, 401, 20)
+    R = [1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
 
-    for i in V:
-        [write_instance(i, 30, 30, 2.0, "batch1/" + str(v) + "-") for v in range(5)]
+    #Batch0
+    [write_instance(3, 4, 5, 1.5, 1.5, "batch0/" + str(v) + "-") for v in range(5)]
+    [write_instance(3, 5, 10, 1.5, 1.5, "batch0/" + str(v) + "-") for v in range(5)]
+    [write_instance(10, 50, 100, 3.0, 1.5, "batch0/" + str(v) + "-") for v in range(5)]
+    [write_instance(25, 50, 150, 3.0, 1.5, "batch0/" + str(v) + "-") for v in range(5)]
+    [write_instance(50, 100, 500, 3.0, 1.5, "batch0/" + str(v) + "-") for v in range(1)]
+    [write_instance(50, 200, 500, 5.0, 1.5, "batch0/" + str(v) + "-") for v in range(1)]
 
-    for f in V:
-        [write_instance(30, f, 30, 2.0, "batch2/" + str(v) + "-") for v in range(5)]
 
-    for j in V:
-        [write_instance(30, 30, j, 2.0, "batch3/" + str(v) + "-") for v in range(5)]
-
-    for x in V:
-        [write_instance(x, x, x, 2.0, "batch4/" + str(v) + "-") for v in range(5)]
-
-    for r in R:
-        [write_instance(50, 100, 200, r, "batch5/" + str(v) + "-") for v in range(3)]
+    # # Batch1
+    # for i in V:
+    #     [write_instance(i, 20, 20, 1.5, 1.5, "batch1/" + str(v) + "-") for v in range(5)]
+    #
+    # # Batch2
+    # for f in V:
+    #     [write_instance(20, f, 20, 1.5, 1.5, "batch2/" + str(v) + "-") for v in range(5)]
+    #
+    # # Batch3
+    # for j in V:
+    #     [write_instance(20, 20, j, 1.5, 1.5, "batch3/" + str(v) + "-") for v in range(5)]
+    #
+    # # Batch4
+    # for x in V:
+    #     [write_instance(x, x, x, 1.5, 1.5, "batch4/" + str(v) + "-") for v in range(5)]
+    #
+    # # Batch5
+    # for r in R:
+    #     [write_instance(20, 40, 100, r, 1.5, "batch5/" + str(v) + "-") for v in range(3)]
+    #
+    # # Batch6
+    # for r in R:
+    #     [write_instance(20, 40, 100, 1.5, r, "batch6/" + str(v) + "-") for v in range(3)]
+    #
+    # # Batch7
+    # for r in R:
+    #     [write_instance(20, 40, 100, r, r, "batch7/" + str(v) + "-") for v in range(3)]
