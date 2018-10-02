@@ -169,7 +169,7 @@ LPSolver::LPSolver(Instancia &dados) {
 LPSolver::~LPSolver() {
   glp_delete_prob(lp);
 }
-
+//Deve verificar se o get_status retorna da forma como escrita
 void LPSolver::resolve() {
   glp_smcp params;
 
@@ -178,11 +178,16 @@ void LPSolver::resolve() {
   params.msg_lev = GLP_MSG_OFF;
   //params.tm_lim = 180;
 
-  //TODO
   //Verificar a flag para o caso do problema ser inviavel
   glp_simplex(lp, &params);
-  func_obj = glp_get_obj_val(lp);
-
+  //Funcao que retorna status sobre viabilidade do problema
+  if (glp_get_status(lp) != "GLP_OPT" || != "GLP_FEAS") {
+    //Atribui-se um valor extremamente a sua funcao obj
+    func_obj = MAX;
+  }
+  else {
+    func_obj = glp_get_obj_val(lp);
+  }
   // std::cout << func_obj << std::endl;
   // double val;
   // for (int i=1; i<lp_var.size(); i++) {
@@ -203,15 +208,26 @@ void LPSolver::fecha_cd(int idx, Instancia &dados) {
 }
 
 //TODO
-void LPSolver::atualiza_sol(Solucao &Sol) {
+void LPSolver::atualiza_sol(Solucao &sol) {
   //Atualizando Funcao objetivo da solucao
-  Sol.func_obj = func_obj;
+  sol.func_obj = func_obj;
   //Atualizando Vetor de facilidades abertas
-  for (int i = 0; i < Sol.F; i++)
+  for (int i = sol.J + 1; i < sol.J + sol.F + 1; i++)
   {
-    
+    sol.y[i - sol.J + 1] = static_cast<bool> glp_get_row_ub(lp, i);
   }
-
+  //Atualizando as matrizes com as variveis de transporte
+  for (int i = 0; i < lp_var.size(); it++)
+  {
+    if (lp_var[i].name == 'x')
+    {
+      sol.x[lp_var[i].idx[0]][lp_var[i].idx[1]] = glp_get_col_prim(lp, i + 1);
+    }
+    if (lp_var[i].name == 'z')
+    {
+      sol.z[lp_var[i].idx[0]][lp_var[i].idx[1]] = glp_get_col_prim(lp, i + 1);
+    }
+  }
 
 }
 

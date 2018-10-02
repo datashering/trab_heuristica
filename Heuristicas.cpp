@@ -24,51 +24,55 @@ void Balancea_Instancia(Instancia& dados, std::vector<bool>& abertas)
 Solucao Drop(Instancia& dados)
 {
   //Sao criadas as structs para armazenar a melhor solucao de uma iteracao assim como a melhor atual
-  Solucao Melhor_Sol = Solucao(dados.I, dados.F, dados.J);
+  Solucao melhor_sol = Solucao(dados.I, dados.F, dados.J);
   //E criada uma classe LPSolver para chamar o solver para resolver o problema do transporte
-  LPSolver Solver(dados);
+  LPSolver solver(dados);
   //E criado um vetor para avaliar a melhoria na solucao para cada facilidade fechada
   std::vector<bool> abertas (dados.F, 1);
   int indice;
-  bool flag = false;
+  bool flag;
 
   //E resolvido o problema do transporte com todas as facilidades abertas para se obter uma solucao inicial
-  Solver.resolve();
-  Solver.atualiza_sol(Melhor_Sol);
+  solver.resolve();
+  solver.atualiza_sol(melhor_sol);
 
   do
   {
     //Para a solucao atual e verificado o efeito de se fechar todas as facilidades separadamente,
     //avaliando qual delas resulta o maior ganho
-    abertas = Melhor_Sol.facilidades;
+    flag = false;
+    abertas = melhor_sol.facilidades;
     for (int i = 0; i < dados.F; i++)
     {
       //E avaliada a nova solucao apenas se a facilidade estiver aberta, caso contrario nao ha necessidade calcular
       if (abertas[i] == 1)
       {
         //Fecha-se a facilidade i
-        Solver.fecha_cd(i, dados);
+        solver.fecha_cd(i, dados);
 
         //E chamada a funcao para resolver o problema do transporte para o vetor atual que retorna a FO
-        Solver.resolve();
-        if (Solver.func_obj < Melhor_Sol.func_obj)
+        solver.resolve();
+        if (solver.func_obj < melhor_sol.func_obj)
         {
           indice = i;
-          atualiza_sol(Melhor_Sol);
+          atualiza_sol(melhor_sol);
           flag = true;
         }
         //Volta-se a abrir a facilidade i para avaliar o impacto da proxima
-        Solver.abre_cd(i, dados);
+        solver.abre_cd(i, dados);
       }
     }
     //Apos o termino da execucao caso a solucao tenha melhorado e atualizado no solver os indices da melhor solucao
     if (flag)
     {
-      Solver.fecha_cd(indice, dados);
+      solver.fecha_cd(indice, dados);
     }
   }
   //Enquanto fechar facilidade gerar reducao de custos continua-se o procedimento
   while (flag);
+
+  //Prints para verificar a solucao, seria melhor fazer uma funcao para isso no Instancia.h
+
 }
 
 //TODO
