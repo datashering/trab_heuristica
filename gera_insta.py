@@ -127,30 +127,30 @@ if __name__ == "__main__":
     [write_instance(50, 200, 500, 5.0, 1.5, "batch0/" + str(v) + "-") for v in range(1)]
 
 
-    # # Batch1
-    # for i in V:
-    #     [write_instance(i, 20, 20, 1.5, 1.5, "batch1/" + str(v) + "-") for v in range(5)]
-    #
-    # # Batch2
-    # for f in V:
-    #     [write_instance(20, f, 20, 1.5, 1.5, "batch2/" + str(v) + "-") for v in range(5)]
-    #
-    # # Batch3
-    # for j in V:
-    #     [write_instance(20, 20, j, 1.5, 1.5, "batch3/" + str(v) + "-") for v in range(5)]
-    #
-    # # Batch4
-    # for x in V:
-    #     [write_instance(x, x, x, 1.5, 1.5, "batch4/" + str(v) + "-") for v in range(5)]
-    #
-    # # Batch5
-    # for r in R:
-    #     [write_instance(20, 40, 100, r, 1.5, "batch5/" + str(v) + "-") for v in range(3)]
-    #
-    # # Batch6
-    # for r in R:
-    #     [write_instance(20, 40, 100, 1.5, r, "batch6/" + str(v) + "-") for v in range(3)]
-    #
-    # # Batch7
-    # for r in R:
-    #     [write_instance(20, 40, 100, r, r, "batch7/" + str(v) + "-") for v in range(3)]
+    # Batch1
+    for i in V:
+        [write_instance(i, 20, 20, 1.5, 1.5, "batch1/" + str(v) + "-") for v in range(5)]
+
+    # Batch2
+    for f in V:
+        [write_instance(20, f, 20, 1.5, 1.5, "batch2/" + str(v) + "-") for v in range(5)]
+
+    # Batch3
+    for j in V:
+        [write_instance(20, 20, j, 1.5, 1.5, "batch3/" + str(v) + "-") for v in range(5)]
+    
+    # Batch4
+    for x in V:
+        [write_instance(x, x, x, 1.5, 1.5, "batch4/" + str(v) + "-") for v in range(5)]
+
+    # Batch5
+    for r in R:
+        [write_instance(20, 40, 100, r, 1.5, "batch5/" + str(v) + "-") for v in range(3)]
+
+    # Batch6
+    for r in R:
+        [write_instance(20, 40, 100, 1.5, r, "batch6/" + str(v) + "-") for v in range(3)]
+
+    # Batch7
+    for r in R:
+        [write_instance(20, 40, 100, r, r, "batch7/" + str(v) + "-") for v in range(3)]
