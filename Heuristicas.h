@@ -32,16 +32,13 @@ void Gera_Custo(Instancia& inst, Candidatos& cand);
 
 void Gera_Sol(Instancia& inst);
 
-
 //  --- Heuristica Drop ---
 
-void Drop(Instancia&);
+double Drop(Instancia&);
 
-//TODO
-void Balancea_Instancia(Instancia&, std::vector<bool>&);
-
-//TODO
 //  --- Heuristica Add  ---
+
+double Add(Instancia&, int);
 
 //  --- Heuristica Iterativa da Mochila ---
 
@@ -60,4 +57,4 @@ struct ProgDinamica {
   void resolve();
 };
 
-double heuristica_iterativa(Instancia&, float);
+double heuristica_iterativa (Instancia &dados);
