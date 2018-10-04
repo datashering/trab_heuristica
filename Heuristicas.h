@@ -26,11 +26,11 @@ struct Candidatos
   Candidatos(int tam);
 };
 
-bool Compara_Custo(const CD& c1, const CD& c2);
+bool Compara_Custo(const CD&, const CD&);
 
-void Gera_Custo(Instancia& inst, Candidatos& cand);
+void Gera_Custo(Instancia&, Candidatos&);
 
-void Gera_Sol(Instancia& inst);
+double Gera_Sol(Instancia&);
 
 //  --- Heuristica Drop ---
 

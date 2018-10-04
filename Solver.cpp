@@ -218,11 +218,11 @@ void LPSolver::atualiza_sol(Solucao &sol) {
   {
     if (glp_get_row_ub(lp, i) > 0)
     {
-      sol.y[i - sol.J + 1] = 1;
+      sol.y[i - (sol.J + 1)] = 1;
     }
     else
     {
-      sol.y[i - sol.J + 1] = 0;
+      sol.y[i - (sol.J + 1)] = 0;
     }
   }
   //Atualizando as matrizes com as variveis de transporte
@@ -445,7 +445,7 @@ void MIPSolver::resolve() {
   glp_init_iocp(&params);
   params.presolve = GLP_ON;
   params.msg_lev = GLP_MSG_OFF;
-  params.tm_lim = 900000;
+  params.tm_lim = 1800000;
   params.cb_func = get_info;
   params.cb_info = &mip_gap;
 
