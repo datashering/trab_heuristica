@@ -249,6 +249,7 @@ double Add(Instancia& dados, int metodos)
       //Caso a abertura da facilidade leve a uma reducao dos custos totais salva-se esse resultado
         if (fo_temp < melhor_sol.func_obj)
         {
+          //std::cout << "Entrou " << std::endl;
           indice = i;
           solver.atualiza_sol(melhor_sol);
           melhor_sol.func_obj = fo_temp;
@@ -271,7 +272,8 @@ double Add(Instancia& dados, int metodos)
   while (flag);
 
   //Prints Gerais para verificar a solucao
-  /*std::cout << "Funcao Objetivo Final: " << melhor_sol.func_obj << std::endl;
+  /*
+  std::cout << "Funcao Objetivo Final: " << melhor_sol.func_obj << std::endl;
 
   for (int i = 0; i < dados.F; i++)
   {
@@ -327,40 +329,55 @@ void Gera_Custo(Instancia& inst, Candidatos& cand)
         custo_total = custo_total + inst.t[i][j];
     }
     custov_medio[i] = custo_total/numero_custov;
-  }
 
-  for (int i = 0; i < cand.tamanho; i++)
-  {
     cand.viaveis[i].cd = i;
     cand.viaveis[i].custo = (inst.b[i]/inst.h[i] + custov_medio[i]);
   }
+
 }
 
 //Funcao que definira quais CDs abrir e qual o custo total deles ao final
-void Gera_Sol(Instancia& inst)
+double Gera_Sol(Instancia& dados)
 {
   int cont = 0;
-  double demanda_total;
+  double demanda_total = 0, custos_fixo = 0;
+  LPSolver solver (dados);
+  Solucao melhor_sol (dados.I, dados.F, dados.J);
 
-  for (int i = 0; i < inst.J; i++)
+  for (int i = 0; i < dados.J; i++)
   {
-    demanda_total = demanda_total + inst.d[i];
+    demanda_total = demanda_total + dados.d[i];
+    //std::cout << "Demanda: " << demanda_total << std::endl;
   }
   //Cria-se uma struct Candidatos com o tamanho total de Centros de Distribuicao
-  Candidatos cand(inst.F);
+  Candidatos cand(dados.F);
   //Preenche-se a struct com o custo medio para cada um desses centros
-  Gera_Custo(inst, cand);
+  Gera_Custo(dados, cand);
   //Ordena-se o vetor de viaveis a partir do custo de cada CD
   std::sort (cand.viaveis.begin(), cand.viaveis.end(), Compara_Custo);
+  //Fecham-se todos os cds no Solver do GLPK
+  for (int i = 0; i < dados.F; i++)
+  {
+    solver.fecha_cd(i, dados);
+  }
   //Enquanto nao tiver capacidade suficiente para se atender a demanda total sao abertos CDs
   while (cand.capacidade_total < demanda_total)
   {
     cand.abertos[cont] = cand.viaveis[cont].cd;
-    cont++;
+    solver.abre_cd(cand.abertos[cont], dados);
     //Adiciona-se a capacidade_total atendida a capacidade do CD aberto
-    cand.capacidade_total = cand.capacidade_total + inst.h[cand.abertos[cont]];
+    cand.capacidade_total = cand.capacidade_total + dados.h[cand.abertos[cont]];
+    //std::cout << "Capacidade: " << cand.capacidade_total << std::endl;
+    custos_fixo += dados.b[cand.abertos[cont]];
+    //std::cout << "Custos_fixos: " << custos_fixo << std::endl;
+    cont++;
   }
+  //Chama-se o solver para resolver o problema do transporte para as facilidades abertas
+  solver.resolve();
+  solver.atualiza_sol(melhor_sol);
+  melhor_sol.func_obj = custos_fixo + solver.func_obj;
 
+  return melhor_sol.func_obj;
 }
 
 //  --- Heuristica Iterativa da Mochila ---

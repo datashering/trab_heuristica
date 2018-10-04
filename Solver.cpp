@@ -218,11 +218,11 @@ void LPSolver::atualiza_sol(Solucao &sol) {
   {
     if (glp_get_row_ub(lp, i) > 0)
     {
-      sol.y[i - sol.J + 1] = 1;
+      sol.y[i - (sol.J + 1)] = 1;
     }
     else
     {
-      sol.y[i - sol.J + 1] = 0;
+      sol.y[i - (sol.J + 1)] = 0;
     }
   }
   //Atualizando as matrizes com as variveis de transporte
