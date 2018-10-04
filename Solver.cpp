@@ -445,7 +445,7 @@ void MIPSolver::resolve() {
   glp_init_iocp(&params);
   params.presolve = GLP_ON;
   params.msg_lev = GLP_MSG_OFF;
-  params.tm_lim = 900000;
+  params.tm_lim = 1800000;
   params.cb_func = get_info;
   params.cb_info = &mip_gap;
 

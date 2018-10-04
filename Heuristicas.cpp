@@ -197,7 +197,7 @@ double Add(Instancia& dados, int metodos)
   std::vector<CD> candi (dados.F);
   bool flag;
   int count = 0, indice;
-  double custos_fixos = 0, fo_temp = 0, capacidade = 0, demanda_total = 0, capac = 0, demand = 0;
+  double custos_fixos = 0, fo_temp = 0, capacidade = 0, demanda_total = 0, capac = 0, demand = 0, custo_var = 0;
 
   //Fecha-se todas as facilidades no modelo do GLPK
   for (int i = 0; i < dados.F; i++)
@@ -227,6 +227,7 @@ double Add(Instancia& dados, int metodos)
   //Obtem-se uma solucao viavel inicial para o problema, com os CDs abertos a partir da inicia_Add
   solver.resolve();
   melhor_sol.func_obj = solver.func_obj + custos_fixos;
+  custo_var = solver.func_obj;
   solver.atualiza_sol(melhor_sol);
 
   //Sao abertas facilidades ate que nao gere uma reducao no custo total do problema
@@ -267,6 +268,7 @@ double Add(Instancia& dados, int metodos)
       solver.abre_cd(indice, dados);
       abertas[indice] = 1;
       custos_fixos = custos_fixos + dados.b[indice];
+      custo_var = solver.func_obj;
     }
   }
   while (flag);
@@ -294,7 +296,8 @@ double Add(Instancia& dados, int metodos)
 
   std::cout << "CAPACIDADE: " << capac << "DEMANDA: " << demand << std::endl;
   */
-  return melhor_sol.func_obj;
+  //std::cout << "Custo Fixos: " << melhor_sol.func_obj - custo_var << "Custo Variavel: " << custo_var << std::endl;
+  return (custo_var/melhor_sol.func_obj);
 }
 
 //  --- Heuristica Gulosa ---
