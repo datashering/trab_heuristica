@@ -31,7 +31,7 @@ double Drop(Instancia& dados)
 
   //E resolvido o problema do transporte com todas as facilidades abertas para se obter uma solucao inicial
   solver.resolve();
-  solver.atualiza_sol(melhor_sol);
+  //solver.atualiza_sol(melhor_sol);
 
   //Adiciona-se o custo fixo por abrir todas as facilidades a Solucao
   for (int i = 0; i < dados.F; i++)
@@ -69,7 +69,7 @@ double Drop(Instancia& dados)
         {
           indice = i;
           melhor_sol.func_obj = fo_temp;
-          solver.atualiza_sol(melhor_sol);
+          //solver.atualiza_sol(melhor_sol);
           flag = true;
         }
         //Volta-se a abrir a facilidade i para avaliar o impacto da proxima
@@ -227,7 +227,7 @@ double Add(Instancia& dados, int metodos)
   //Obtem-se uma solucao viavel inicial para o problema, com os CDs abertos a partir da inicia_Add
   solver.resolve();
   melhor_sol.func_obj = solver.func_obj + custos_fixos;
-  solver.atualiza_sol(melhor_sol);
+  //solver.atualiza_sol(melhor_sol);
 
   //Sao abertas facilidades ate que nao gere uma reducao no custo total do problema
   do
@@ -250,7 +250,7 @@ double Add(Instancia& dados, int metodos)
         if (fo_temp < melhor_sol.func_obj)
         {
           indice = i;
-          solver.atualiza_sol(melhor_sol);
+          //solver.atualiza_sol(melhor_sol);
           melhor_sol.func_obj = fo_temp;
           flag = true;
         }
