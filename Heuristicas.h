@@ -45,6 +45,12 @@ void Balancea_Instancia(Instancia&, std::vector<bool>&);
 
 //  --- Heuristica Iterativa da Mochila ---
 
+struct Resultados {
+  double fo;
+  std::vector<int> itr;
+  std::vector<double> vec_fo;
+};
+
 struct ProgDinamica {
   int k;
   int demanda;
@@ -57,7 +63,7 @@ struct ProgDinamica {
 
   ProgDinamica(Instancia&);
   ~ProgDinamica();
-  void resolve();
+  bool resolve();
 };
 
-double heuristica_iterativa(Instancia&, float);
+void heuristica_iterativa(Instancia&, float, Resultados&);

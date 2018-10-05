@@ -237,7 +237,7 @@ void LPSolver::atualiza_custos(Instancia &dados, std::vector<double> &custos, fl
   int N = lp_var.size();
   int F = dados.F;
   int i, f, j;
-  std::vector<double> custo_transp(F, 0), qnt_transp(F, 0);
+  std::vector<double> custo_transp(F, 0);
 
   for (int idx=1; idx<N; idx++) {
     if (glp_get_col_prim(lp, idx) == 0) {
@@ -248,14 +248,12 @@ void LPSolver::atualiza_custos(Instancia &dados, std::vector<double> &custos, fl
       i = lp_var[idx].idx[0];
       f = lp_var[idx].idx[1];
       custo_transp[f] += glp_get_col_prim(lp, idx) * dados.c[i][f];
-      qnt_transp[f] += glp_get_col_prim(lp, idx);
     }
 
     else if (lp_var[idx].name == 'z') {
       f = lp_var[idx].idx[0];
       j = lp_var[idx].idx[1];
-      custo_transp[f] += glp_get_col_prim(lp, idx) * dados.c[i][f];
-      qnt_transp[f] += glp_get_col_prim(lp, idx);
+      custo_transp[f] += glp_get_col_prim(lp, idx) * dados.t[f][j];
     }
 
     else {
@@ -264,10 +262,8 @@ void LPSolver::atualiza_custos(Instancia &dados, std::vector<double> &custos, fl
   }
 
   for (int f=0; f<F; f++) {
-    if (qnt_transp[f] != 0) {
-      //std::cout << f << " - " << custos[f] << " ";
+    if (custo_transp[f] != 0) {
       custos[f] = (1 - alpha)*custos[f] +  alpha*(dados.b[f] + custo_transp[f]);
-      //std::cout << custos[f] << std::endl;
     }
   }
 
