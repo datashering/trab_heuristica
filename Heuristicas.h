@@ -26,22 +26,19 @@ struct Candidatos
   Candidatos(int tam);
 };
 
-bool Compara_Custo(const CD& c1, const CD& c2);
+bool Compara_Custo(const CD&, const CD&);
 
-void Gera_Custo(Instancia& inst, Candidatos& cand);
+void Gera_Custo(Instancia&, Candidatos&);
 
-void Gera_Sol(Instancia& inst);
-
+double Gera_Sol(Instancia&);
 
 //  --- Heuristica Drop ---
 
-void Drop(Instancia&);
+double Drop(Instancia&);
 
-//TODO
-void Balancea_Instancia(Instancia&, std::vector<bool>&);
-
-//TODO
 //  --- Heuristica Add  ---
+
+double Add(Instancia&, int);
 
 //  --- Heuristica Iterativa da Mochila ---
 

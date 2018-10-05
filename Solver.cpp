@@ -216,7 +216,14 @@ void LPSolver::atualiza_sol(Solucao &sol) {
   //Atualizando Vetor de facilidades abertas
   for (int i = sol.J + 1; i < sol.J + sol.F + 1; i++)
   {
-    sol.y[i - sol.J + 1] = static_cast<bool> (glp_get_row_ub(lp, i));
+    if (glp_get_row_ub(lp, i) > 0)
+    {
+      sol.y[i - (sol.J + 1)] = 1;
+    }
+    else
+    {
+      sol.y[i - (sol.J + 1)] = 0;
+    }
   }
   //Atualizando as matrizes com as variveis de transporte
   for (int i = 0; i < lp_var.size(); i++)
@@ -434,7 +441,7 @@ void MIPSolver::resolve() {
   glp_init_iocp(&params);
   params.presolve = GLP_ON;
   params.msg_lev = GLP_MSG_OFF;
-  params.tm_lim = 900000;
+  params.tm_lim = 1800000;
   params.cb_func = get_info;
   params.cb_info = &mip_gap;
 
