@@ -392,7 +392,11 @@ ProgDinamica::ProgDinamica(Instancia &dados) {
   for (int i=0; i<k; i++) {
     capacidades[i] = std::floor(dados.h[i]);
   }
+
   sol.resize(k);
+  for (int i=0; i<k; i++) {
+    sol[i] = true;
+  }
   custos.resize(k);
 
   opt = new double*[k];
@@ -412,7 +416,7 @@ ProgDinamica::~ProgDinamica() {
   delete[] opt_sol;
 }
 
-void ProgDinamica::resolve() {
+bool ProgDinamica::resolve() {
   // Caso base
   opt[0][0] = 0;      // Se a demanda = 0 -> opt = 0
   opt_sol[0][0] = 0;  // Nao abre CD
@@ -453,50 +457,64 @@ void ProgDinamica::resolve() {
 
   // Reconstruindo solucao
   double func_obj = 0;
+  bool flag = false;
 
   resto = demanda;
   for (int i=k-1; i>=0; i--) {
-    sol[i] = opt_sol[i][resto];
+
+    if (sol[i] != opt_sol[i][resto]) {
+      sol[i] = opt_sol[i][resto];
+      flag = true;
+    }
 
     if (sol[i]) {
       resto = std::max(0, resto - capacidades[i]);
     }
   }
+  return flag;
 }
 
-double heuristica_iterativa(Instancia &dados, float alpha) {
+void heuristica_iterativa(Instancia &dados, float alpha, Resultados &r) {
   ProgDinamica pd(dados);
   LPSolver solver(dados);
-  double current_of, best_of = MAX;
-  int best_idx;
+  double fo_atual = 0;
 
+  r.fo = MAX;
+  r.itr.reserve(50);
+  r.vec_fo.reserve(50);
   pd.custos = dados.b;
 
-  for (int i=0; i<100; i++) {
-    pd.resolve();
-    current_of = 0;
-    for (int i=0; i<dados.F; i++) {
-      if (pd.sol[i]) {
-        solver.abre_cd(i, dados);
-        current_of += dados.b[i];
+  for (int i=0; i<50; i++) {
+    // Se a alocação de CDs mudou
+    if (pd.resolve()) {
+      fo_atual = 0;
+      // Atualiza LP e calcula custo fixo
+      for (int j=0; j<dados.F; j++) {
+        if (pd.sol[j]) {
+          solver.abre_cd(j, dados);
+          fo_atual += dados.b[j];
+        }
+        else {
+          solver.fecha_cd(j, dados);
+        }
       }
-      else {
-        solver.fecha_cd(i, dados);
-      }
-    }
-    solver.resolve();
-    solver.atualiza_custos(dados, pd.custos, alpha);
-    // std::cout << current_of << " ";
-    current_of += solver.func_obj;
-    // std::cout << i << ": " << current_of << std::endl;
 
-    if (current_of < best_of) {
-      best_of = current_of;
-      best_idx = i;
+      // Recalcula custo variado
+      solver.resolve();
+      fo_atual += solver.func_obj;
+
+      // Se encontrou solucao melhor atualiza info
+      if (fo_atual < r.fo) {
+        r.fo = fo_atual;
+        r.itr.push_back(i);
+        r.vec_fo.push_back(r.fo);
+      }
     }
+
+    //Atualiza custos
+    solver.atualiza_custos(dados, pd.custos, alpha);
   }
 
-  std::cout << best_idx << std::endl;
-
-  return best_of;
+  r.itr.push_back(50);
+  r.vec_fo.push_back(r.fo);
 }
