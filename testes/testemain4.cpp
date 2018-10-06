@@ -4,6 +4,7 @@
 #include <string>
 #include <dirent.h>
 #include "Heuristicas.h"
+#include "Solver.h"
 
 void get_names(std::vector<std::string> &batch, const char *dir_name) {
   struct dirent *dp;
@@ -23,19 +24,19 @@ int main(){
   std::clock_t inicio;
   double tempo_exe, func_obj;
   std::ofstream arquivo;
-// //  >>>>>>>>>>>>>>>>>>>>>   BATCH 11
- get_names(batch, "instancias_c/batch11");
- arquivo.open("saida/Add_batch11.txt");
+  // //  >>>>>>>>>>>>>>>>>>>>>   BATCH 11
+   get_names(batch, "instancias_c/batch11");
+   arquivo.open("saida/MIP_batch11.txt");
 
- for (std::string nome : batch) {
-   std::cout << "batch11 " << nome << std::endl;
-   Instancia dados(("instancias_c/batch11/" + nome).c_str());
+   for (std::string nome : batch) {
+     std::cout << "batch11 " << nome << std::endl;
+     Instancia dados(("instancias_c/batch11/" + nome).c_str());
+     MIPSolver solver(dados);
 
-   inicio = clock();
-   func_obj = Add(dados, 4);
-   tempo_exe = static_cast<double>(clock() - inicio) / CLOCKS_PER_SEC;
-   arquivo << nome << "-" << func_obj << "-" << tempo_exe << std::endl;
- }
- arquivo.close();
-
- }
+     inicio = clock();
+     func_obj = solver.resolve();
+     tempo_exe = static_cast<double>(clock() - inicio) / CLOCKS_PER_SEC;
+     arquivo << nome << "-" << func_obj << "-" << tempo_exe << std::endl;
+   }
+   arquivo.close();
+}

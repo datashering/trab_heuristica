@@ -25,12 +25,12 @@ int main()
   double tempo_exe, func_obj;
   std::ofstream arquivo;
 // //  >>>>>>>>>>>>>>>>>>>>>   BATCH 10
- get_names(batch, "instancias_c/batch10");
+ get_names(batch, "instancias_cdrop/batch10");
  arquivo.open("saida/Drop_batch10.txt");
 
  for (std::string nome : batch) {
    std::cout << "batch10 " << nome << std::endl;
-   Instancia dados(("instancias_c/batch10/" + nome).c_str());
+   Instancia dados(("instancias_cdrop/batch10/" + nome).c_str());
 
    inicio = clock();
    func_obj = Drop(dados);

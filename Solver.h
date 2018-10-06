@@ -41,5 +41,5 @@ public:
   MIPSolver(Instancia&);
   ~MIPSolver();
 
-  void resolve();
+  double resolve();
 };
