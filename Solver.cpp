@@ -435,7 +435,7 @@ MIPSolver::~MIPSolver() {
   glp_delete_prob(mip);
 }
 
-double MIPSolver::resolve() {
+void MIPSolver::resolve() {
   glp_iocp params;
 
   glp_init_iocp(&params);
@@ -451,5 +451,4 @@ double MIPSolver::resolve() {
     mip_gap = 0;
   }
 
-  return func_obj;
 }

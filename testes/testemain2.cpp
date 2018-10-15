@@ -36,7 +36,7 @@ int main(){
      inicio = clock();
      func_obj = solver.resolve();
      tempo_exe = static_cast<double>(clock() - inicio) / CLOCKS_PER_SEC;
-     arquivo << nome << "-" << func_obj << "-" << tempo_exe << std::endl;
+     arquivo << nome << "-" << func_obj << "-" << solver.mip_gap << "-" << tempo_exe << std::endl;
    }
    arquivo.close();
 }
