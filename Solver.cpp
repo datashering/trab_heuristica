@@ -210,7 +210,6 @@ void LPSolver::fecha_cd(int idx, Instancia &dados) {
   glp_set_row_bnds(lp, dados.J + idx + 1, GLP_UP, 0.0, 0.0);
 }
 
-//TOCHECK
 void LPSolver::atualiza_sol(Solucao &sol) {
 
   //Atualizando Vetor de facilidades abertas
@@ -226,7 +225,8 @@ void LPSolver::atualiza_sol(Solucao &sol) {
     }
   }
   //Atualizando as matrizes com as variveis de transporte
-  for (int i = 0; i < lp_var.size(); i++)
+  int size = lp_var.size();
+  for (int i = 0; i < size; i++)
   {
     if (lp_var[i].name == 'x')
     {

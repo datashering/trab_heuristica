@@ -21,24 +21,24 @@ struct Candidatos
   //Vetor com os CDs que foram abertos
   std::vector<int> abertos;
   //Capacidade total dos CDs ja abertos
-  double capacidade_total;
+  int capacidade_total;
 
   Candidatos(int tam);
 };
 
-bool Compara_Custo(const CD&, const CD&);
+bool compara_custo(const CD&, const CD&);
 
-void Gera_Custo(Instancia&, Candidatos&);
+void gera_custo(Instancia&, Candidatos&);
 
-double Gera_Sol(Instancia&);
+double gera_sol(Instancia&);
 
 //  --- Heuristica Drop ---
 
-double Drop(Instancia&);
+double drop(Instancia&);
 
 //  --- Heuristica Add  ---
 
-double Add(Instancia&, int);
+double add(Instancia&, int);
 
 //  --- Heuristica Iterativa da Mochila ---
 
@@ -62,5 +62,7 @@ struct ProgDinamica {
   ~ProgDinamica();
   bool resolve();
 };
+
+void inicializa_custos(Instancia&, std::vector<double>&);
 
 void heuristica_iterativa(Instancia&, float, Resultados&);

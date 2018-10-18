@@ -9,7 +9,7 @@
 
 
 //Funcao que compara dois custos de structs CDs e retorna qual o maior, sera usada no sort
-bool Compara_Custo(const CD& c1, const CD& c2)
+bool compara_custo(const CD& c1, const CD& c2)
 {
   return c1.custo < c2.custo;
 }
@@ -17,7 +17,7 @@ bool Compara_Custo(const CD& c1, const CD& c2)
 //  --- Heuristica Drop ---
 
 //Funcao que retorna qual vetor de facilidades abertas gerara a melhor FO a partir do criterio DROP
-double Drop(Instancia& dados)
+double drop(Instancia& dados)
 {
   //Sao criadas as structs para armazenar a melhor solucao de uma iteracao assim como a melhor atual
   Solucao melhor_sol = Solucao(dados.I, dados.F, dados.J);
@@ -26,7 +26,7 @@ double Drop(Instancia& dados)
   //E criado um vetor para avaliar a melhoria na solucao para cada facilidade fechada
   std::vector<bool> abertas (dados.F, 1);
   int indice;
-  double custos_fixos = 0, fo_temp = 0, demand = 0, capac = 0;
+  double custos_fixos = 0, fo_temp = 0;
   bool flag;
 
   //E resolvido o problema do transporte com todas as facilidades abertas para se obter uma solucao inicial
@@ -117,7 +117,7 @@ double Drop(Instancia& dados)
 //  --- Heuristica Add ---
 
 //Funcao que inicializa a Add a partir de algum dos criterios definidos
-void inicia_Add(Instancia& dados, std::vector<CD>& candi, int metodo)
+void inicia_add(Instancia& dados, std::vector<CD>& candi, int metodo)
 {
   //Criterio que ordena pela capacidade dos CDs em ordem decrescente
   if (metodo == 1)
@@ -125,7 +125,7 @@ void inicia_Add(Instancia& dados, std::vector<CD>& candi, int metodo)
     for (int i = 0; i < dados.F; i++)
     {
       candi[i].cd = i;
-      candi[i].custo = 1/dados.h[i];
+      candi[i].custo = 1.0/dados.h[i];
     }
   }
   //Criterio que ordena o vetor pela razao da capacidade e custo de cada CD em ordem crescente
@@ -140,7 +140,8 @@ void inicia_Add(Instancia& dados, std::vector<CD>& candi, int metodo)
 
   if (metodo == 3)
   {
-    double demanda, custo_var;
+    double custo_var;
+    int demanda;
     for (int i = 0; i < dados.F; i++)
     {
       demanda = 0;
@@ -186,10 +187,10 @@ void inicia_Add(Instancia& dados, std::vector<CD>& candi, int metodo)
        candi[i].cd = i;
      }
   }
-  std::sort (candi.begin(), candi.end(), Compara_Custo);
+  std::sort (candi.begin(), candi.end(), compara_custo);
 }
 
-double Add(Instancia& dados, int metodos)
+double add(Instancia& dados, int metodos)
 {
   LPSolver solver(dados);
   Solucao melhor_sol = Solucao(dados.I, dados.F, dados.J);
@@ -197,7 +198,8 @@ double Add(Instancia& dados, int metodos)
   std::vector<CD> candi (dados.F);
   bool flag;
   int count = 0, indice;
-  double custos_fixos = 0, fo_temp = 0, capacidade = 0, demanda_total = 0, capac = 0, demand = 0, custo_var = 0;
+  double custos_fixos = 0, fo_temp = 0;
+  int capacidade = 0, demanda_total = 0;
 
   //Fecha-se todas as facilidades no modelo do GLPK
   for (int i = 0; i < dados.F; i++)
@@ -211,7 +213,7 @@ double Add(Instancia& dados, int metodos)
   }
 
   //Ordena-se CDs por algum criterio para a inicializacao da Add
-  inicia_Add(dados, candi, metodos);
+  inicia_add(dados, candi, metodos);
 
   //Abre-se CDs ate que a demanda seja atendida, abrindo-se na ordem definida pela funcao inicia_add
   while (capacidade < demanda_total)
@@ -227,7 +229,6 @@ double Add(Instancia& dados, int metodos)
   //Obtem-se uma solucao viavel inicial para o problema, com os CDs abertos a partir da inicia_Add
   solver.resolve();
   melhor_sol.func_obj = solver.func_obj + custos_fixos;
-  custo_var = solver.func_obj;
   solver.atualiza_sol(melhor_sol);
 
   //Sao abertas facilidades ate que nao gere uma reducao no custo total do problema
@@ -268,7 +269,6 @@ double Add(Instancia& dados, int metodos)
       solver.abre_cd(indice, dados);
       abertas[indice] = 1;
       custos_fixos = custos_fixos + dados.b[indice];
-      custo_var = solver.func_obj;
     }
   }
   while (flag);
@@ -311,7 +311,7 @@ Candidatos::Candidatos(int tam): tamanho(tam)
 }
 
 //Funcao que gerara um custo medio para cada CD da struct Candidatos
-void Gera_Custo(Instancia& inst, Candidatos& cand)
+void gera_custo(Instancia& inst, Candidatos& cand)
 {
   std::vector<double> custov_medio;
   custov_medio.resize(cand.tamanho);
@@ -340,10 +340,11 @@ void Gera_Custo(Instancia& inst, Candidatos& cand)
 }
 
 //Funcao que definira quais CDs abrir e qual o custo total deles ao final
-double Gera_Sol(Instancia& dados)
+double gera_sol(Instancia& dados)
 {
   int cont = 0;
-  double demanda_total = 0, custos_fixo = 0;
+  double custos_fixo = 0;
+  int demanda_total = 0;
   LPSolver solver (dados);
   Solucao melhor_sol (dados.I, dados.F, dados.J);
 
@@ -355,9 +356,9 @@ double Gera_Sol(Instancia& dados)
   //Cria-se uma struct Candidatos com o tamanho total de Centros de Distribuicao
   Candidatos cand(dados.F);
   //Preenche-se a struct com o custo medio para cada um desses centros
-  Gera_Custo(dados, cand);
+  gera_custo(dados, cand);
   //Ordena-se o vetor de viaveis a partir do custo de cada CD
-  std::sort (cand.viaveis.begin(), cand.viaveis.end(), Compara_Custo);
+  std::sort (cand.viaveis.begin(), cand.viaveis.end(), compara_custo);
   //Fecham-se todos os cds no Solver do GLPK
   for (int i = 0; i < dados.F; i++)
   {
@@ -387,11 +388,9 @@ double Gera_Sol(Instancia& dados)
 
 ProgDinamica::ProgDinamica(Instancia &dados) {
   k = dados.F;
-  demanda = std::ceil(std::accumulate(dados.d.begin(), dados.d.end(), 0.0));
-  capacidades.resize(k);
-  for (int i=0; i<k; i++) {
-    capacidades[i] = std::floor(dados.h[i]);
-  }
+  demanda = std::accumulate(dados.d.begin(), dados.d.end(), 0.0);
+
+  capacidades = dados.h;
 
   sol.resize(k);
   for (int i=0; i<k; i++) {
@@ -456,7 +455,6 @@ bool ProgDinamica::resolve() {
   }
 
   // Reconstruindo solucao
-  double func_obj = 0;
   bool flag = false;
 
   resto = demanda;
@@ -472,6 +470,10 @@ bool ProgDinamica::resolve() {
     }
   }
   return flag;
+}
+
+void inicializa_custos(Instancia &dados, std::vector<double> &custos) {
+  
 }
 
 void heuristica_iterativa(Instancia &dados, float alpha, Resultados &r) {
