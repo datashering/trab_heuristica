@@ -10,7 +10,7 @@
 #include "Solver.h"
 
 // Variaveis globais
-std::mt19937 rng;
+std::mt19937 generator(123);
 
 // Funcoes Uteis
 double abre_aprox(Instancia &dados, const Solucao &sol, int cd) {
