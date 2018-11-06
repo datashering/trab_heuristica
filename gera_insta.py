@@ -122,12 +122,11 @@ if __name__ == "__main__":
 
 
     # Batch0
-    [write_instance(3, 4, 5, 1.5, "batch0/" + str(v) + "_") for v in range(5)]
-    [write_instance(3, 5, 10, 1.5, "batch0/" + str(v) + "_") for v in range(5)]
-    [write_instance(10, 50, 100, 3.0, "batch0/" + str(v) + "_") for v in range(5)]
-    [write_instance(25, 50, 150, 3.0, "batch0/" + str(v) + "_") for v in range(5)]
-    [write_instance(50, 100, 500, 3.0, "batch0/" + str(v) + "_") for v in range(1)]
-    [write_instance(50, 200, 500, 5.0, "batch0/" + str(v) + "_") for v in range(1)]
+    [write_instance(10, 20, 40, 1.5, "batch0/" + str(v) + "_") for v in range(10)]
+    [write_instance(25, 50, 100, 3.0, "batch0/" + str(v) + "_") for v in range(10)]
+    [write_instance(50, 100, 200, 5.0, "batch0/" + str(v) + "_") for v in range(10)]
+    [write_instance(50, 100, 200, 10.0, "batch0/" + str(v) + "_") for v in range(10)]
+    [write_instance(100, 200, 300, 10.0, "batch0/" + str(v) + "_") for v in range(10)]
 
     # Batch1
     for x in V:

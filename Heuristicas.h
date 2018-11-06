@@ -30,23 +30,17 @@ bool compara_custo(const CD&, const CD&);
 
 void gera_custo(Instancia&, Candidatos&);
 
-double gera_sol(Instancia&);
+void heuristica_gulosa(Instancia&, Solucao &sol);
 
 //  --- Heuristica Drop ---
 
-double drop(Instancia&);
+void drop(Instancia&, Solucao&);
 
 //  --- Heuristica Add  ---
 
-double add(Instancia&, int);
+void add(Instancia&, Solucao&, int);
 
 //  --- Heuristica Iterativa da Mochila ---
-
-struct Resultados {
-  double fo;
-  std::vector<int> itr;
-  std::vector<double> vec_fo;
-};
 
 struct ProgDinamica {
   int k;
@@ -65,4 +59,6 @@ struct ProgDinamica {
 
 void inicializa_custos(Instancia&, std::vector<double>&);
 
-void heuristica_iterativa(Instancia&, float, Resultados&);
+void heuristica_iterativa(Instancia&, Solucao&, float);
+
+void busca_local();

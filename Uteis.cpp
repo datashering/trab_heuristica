@@ -11,9 +11,9 @@ Solucao::Solucao(int I, int F, int J): I(I), F(F), J(J)
     x[i] = new double[F];
   }
   z = new double*[F];
-  for (int i = 0; i < F; i++)
+  for (int f = 0; f < F; f++)
   {
-    z[i] = new double[J];
+    z[f] = new double[J];
   }
 }
 
@@ -27,9 +27,9 @@ Solucao::~Solucao()
   delete[] x;
 
   //Desalocando o vetor de custo variavel t
-  for (int i = 0; i < F; i++)
+  for (int f = 0; f < F; f++)
   {
-    delete[] z[i];
+    delete[] z[f];
   }
   delete[] z;
 }
@@ -47,7 +47,7 @@ Instancia::Instancia(const char *nome)
   }
   //Lendo quantos pontos de oferta, CD e demanda que a instancia tem
   file >> I >> F >> J;
-  std::cout << I << " " << F << " " << J << std::endl;
+  //std::cout << I << " " << F << " " << J << std::endl;
 
   //Dando resize nos vector e alocando as matrizes de custos variaveis
   p.resize(I);
@@ -79,9 +79,11 @@ Instancia::Instancia(const char *nome)
     //std::cout << "Capacidade[" << i+1 << "]: " << h[i] << std::endl;
   }
   //Lendo a demanda
+  d_total = 0;
   for (int i = 0; i < J; i++)
   {
     file >> d[i];
+    d_total += d[i];
     //std::cout << "Demanda[" << i+1 << "]: " << d[i] << std::endl;
   }
   //Lendo o custo fixo de abertura

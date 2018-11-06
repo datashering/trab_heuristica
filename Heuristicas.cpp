@@ -3,121 +3,207 @@
 #include <algorithm>
 #include <limits>
 #include <cmath>
+#include <array>
+#include <random>
 #include "Heuristicas.h"
 #include "Uteis.h"
 #include "Solver.h"
 
+// Variaveis globais
+std::mt19937 rng;
 
-//Funcao que compara dois custos de structs CDs e retorna qual o maior, sera usada no sort
-bool compara_custo(const CD& c1, const CD& c2)
-{
-  return c1.custo < c2.custo;
-}
+// Funcoes Uteis
+double abre_aprox(Instancia &dados, const Solucao &sol, int cd) {
+  typedef std::array<double, 4> Tuple;
+  std::vector<Tuple> ganho;
 
-//  --- Heuristica Drop ---
-
-//Funcao que retorna qual vetor de facilidades abertas gerara a melhor FO a partir do criterio DROP
-double drop(Instancia& dados)
-{
-  //Sao criadas as structs para armazenar a melhor solucao de uma iteracao assim como a melhor atual
-  Solucao melhor_sol = Solucao(dados.I, dados.F, dados.J);
-  //E criada uma classe LPSolver para chamar o solver para resolver o problema do transporte
-  LPSolver solver(dados);
-  //E criado um vetor para avaliar a melhoria na solucao para cada facilidade fechada
-  std::vector<bool> abertas (dados.F, 1);
-  int indice;
-  double custos_fixos = 0, fo_temp = 0;
-  bool flag;
-
-  //E resolvido o problema do transporte com todas as facilidades abertas para se obter uma solucao inicial
-  solver.resolve();
-  //solver.atualiza_sol(melhor_sol);
-
-  //Adiciona-se o custo fixo por abrir todas as facilidades a Solucao
-  for (int i = 0; i < dados.F; i++)
-  {
-    if(abertas[i] == 1)
-    {
-      custos_fixos = custos_fixos + dados.b[i];
+  // Calculando o ganho de redirecionar o arco (i,f,j) -> (i,cd,j)
+  ganho.reserve(dados.I * dados.F * dados.J);
+  for (int f=0; f<dados.F; f++) {
+    if (sol.y[f] == 0) {
+      continue;
     }
-  }
-  melhor_sol.func_obj = solver.func_obj + custos_fixos;
 
-  do
-  {
-    //Para a solucao atual e verificado o efeito de se fechar todas as facilidades separadamente,
-    //avaliando qual delas resulta o maior ganho
-    flag = false;
+    for (int j=0; j<dados.J; j++) {
+      if (sol.z[f][j] == 0) {
+        continue;
+      }
 
-    for (int i = 0; i < dados.F; i++)
-    {
-      //E avaliada a nova solucao apenas se a facilidade estiver aberta, caso contrario nao ha necessidade calcular
-      if (abertas[i] == 1)
-      {
-        //std::cout <<"ENTOUR: " << i << std::endl;
-        //Fecha-se a facilidade i
-        solver.fecha_cd(i, dados);
-        abertas[i] = 0;
-        custos_fixos = custos_fixos - dados.b[i];
-
-        //E chamada a funcao para resolver o problema do transporte para o vetor atual que retorna a FO
-        solver.resolve();
-
-        fo_temp = solver.func_obj + custos_fixos;
-        //std::cout << "FUNC : " << fo_temp << std::endl;
-        if (fo_temp < melhor_sol.func_obj)
-        {
-          indice = i;
-          melhor_sol.func_obj = fo_temp;
-          //solver.atualiza_sol(melhor_sol);
-          flag = true;
+      for (int i=0; i<dados.I; i++) {
+        if (sol.x[i][f] == 0) {
+          continue;
         }
-        //Volta-se a abrir a facilidade i para avaliar o impacto da proxima
-        solver.abre_cd(i, dados);
-        abertas[i] = 1;
-        custos_fixos = custos_fixos + dados.b[i];
+
+        Tuple g;
+        g[0] = i;
+        g[1] = f;
+        g[2] = j;
+        g[3] = dados.c[i][f] - dados.c[i][cd] + dados.t[f][j] - dados.t[cd][j];
+        ganho.push_back(g);
       }
     }
-    //Apos o termino da execucao caso a solucao tenha melhorado e atualizado no solver os indices da melhor solucao
-    if (flag)
-    {
-      solver.fecha_cd(indice, dados);
-      abertas[indice] = 0;
-      custos_fixos = custos_fixos - dados.b[indice];
+  }
+
+  // Ordenação (decrescente) do vetor de ganho
+  auto comparador = [](Tuple a, Tuple b) { return a[3] > b[3]; };
+  std::sort(ganho.begin(), ganho.end(), comparador);
+
+  double redirecionado = 0;
+  double fo = sol.func_obj;
+
+  for (Tuple t : ganho) {
+    // Caso não tenho mais ganhos interromper
+    if (t[3] <=0) {
+      break;
+    }
+
+    int i = t[0];
+    int f = t[1];
+    int j = t[2];
+
+    // Definindo a quantidade a ser redirecioada
+    double qtd = std::min(sol.x[i][f], sol.z[f][j]);
+    qtd = std::min(qtd, dados.h[cd] - redirecionado);
+    redirecionado += qtd;
+
+    // Atualização da solução
+    fo -= qtd * t[3];
+    //sol.x[i][f] -= qtd;
+    //sol.z[f][j] -= qtd;
+    //sol.x[i][cd] += qtd;
+    //sol.z[cd][j] += qtd;
+
+    // Acabou a capacidade interrompe
+    if (redirecionado == dados.h[cd]) {
+      break;
     }
   }
-  //Enquanto fechar facilidade gerar reducao de custos continua-se o procedimento
-  while (flag);
 
-  //Prints para verificar a solucao, seria melhor fazer uma funcao para isso no Instancia.h
-  //std::cout << "Funcao Objetivo Final: " << melhor_sol.func_obj << std::endl;
-  /*
-  for (int i = 0; i < dados.F; i++)
-  {
-    //std::cout << "Facilidades abertas: " << abertas[i] << std::endl;
-    if (abertas[i] == 1)
-    {
-      capac = capac + dados.h[i];
-      std::cout << "CAPACIDADE DE " << i << ": " << dados.h[i] << std::endl;
-      std::cout << "Custo DE aber " << i << ": " << dados.b[i] << std::endl;
-      std::cout << melhor_sol.y[i] << std::endl;
-    }
-  }
+  return fo + dados.b[cd];
 
-  for (int j = 0; j < dados.J; j++)
-  {
-    demand = demand + dados.d[j];
-  }
-
-  std::cout << "CAPACIDADE: " << capac << "DEMANDA: " << demand << std::endl;
-  */
-  return melhor_sol.func_obj;
 }
 
-//  --- Heuristica Add ---
+double fecha_aprox(Instancia &dados, const Solucao &sol, int cd) {
+  typedef std::array<double, 3> Tuple;
 
-//Funcao que inicializa a Add a partir de algum dos criterios definidos
-void inicia_add(Instancia& dados, std::vector<CD>& candi, int metodo)
+  // Calculo a capacidade restante de cada CD aberto
+  std::vector<int> cap_cd(dados.F);
+  std::vector<int> cds_abertos;
+  cds_abertos.reserve(dados.F);
+
+  for (int f=0; f<dados.F; f++) {
+    if (sol.y[f] == 0 || f == cd) {
+      cap_cd[f] = 0;
+      continue;
+    }
+
+    int sum = 0;
+    for (int i=0; i<dados.I; i++) {
+      sum += sol.x[i][f];
+    }
+
+    cds_abertos.push_back(f);
+    cap_cd[f] = dados.h[f] - sum;
+  }
+
+  // Calculo da capacidade restante de cada oferta
+  std::vector<int> cap_prod(dados.I);
+  for (int i=0; i<dados.I; i++) {
+    int sum = 0;
+
+    for (int f : cds_abertos) {
+      sum += sol.x[i][f];
+    }
+
+    cap_prod[i] = dados.p[i] - sum;
+  }
+
+  // Criando vetores de redirecionamento
+  std::vector<int> rx(dados.I, 0);
+  std::vector<int> rz(dados.J, 0);
+
+  // Atender cada cliente de forma gulosa
+  double fo = sol.func_obj - dados.b[cd];
+
+  for (int j=0; j<dados.J; j++) {
+    if (sol.z[cd][j] - rz[j] == 0) {
+      continue;
+    }
+
+    std::vector<Tuple> custos;
+    custos.reserve(dados.F * dados.I);
+
+    // Calculando o custo de redirecionar o arco (i,cd,j) -> (i,f,j)
+    for (int i=0; i<dados.I; i++) {
+      if (cap_prod[i] == 0 || sol.x[i][cd] - rx[i] == 0) {
+        continue;
+      }
+
+      for (int f : cds_abertos) {
+        if (cap_cd[f] == 0) {
+          continue;
+        }
+
+        Tuple t;
+        t[0] = i;
+        t[1] = f;
+        t[2] = dados.c[i][f] - dados.c[i][cd] + dados.t[f][j] - dados.t[cd][j];
+        custos.push_back(t);
+      }
+    }
+
+    // Ordenação (crescente) do vetor de custos
+    auto comparador = [](Tuple a, Tuple b) { return a[2] < b[2]; };
+    std::sort(custos.begin(), custos.end(), comparador);
+
+    for (Tuple t : custos) {
+      int i =  t[0];
+      int f = t[1];
+
+      int resto = sol.z[cd][j] - rz[j];
+
+      int qtd = std::min(cap_cd[f], cap_prod[i]);
+      qtd = std::min(qtd, resto);
+
+      cap_cd[f] -= qtd;
+      cap_prod[i] -= qtd;
+
+      fo += qtd * t[2];
+      rx[i] += qtd;
+      rz[j] += qtd;
+      // sol.x[i][cd] -= qtd;
+      // sol.z[cd][j] -= qtd;
+      // sol.x[i][f] += qtd;
+      // sol.z[f][j] += qtd;
+
+      if (sol.z[cd][j] - rz[j] == 0) {
+        break;
+      }
+
+    }
+  }
+
+  return fo;
+}
+
+double avalia_t1b(Instancia &dados, Solucao &sol, int cd) {
+  if (sol.y[cd] == 0) {
+    return abre_aprox(dados, sol, cd);
+  }
+
+  else if (dados.d_total < sol.cap_total - dados.b[cd]) {
+    return fecha_aprox(dados, sol, cd);
+  }
+
+  else {
+    return -1;
+  }
+}
+
+//    ----- Heuristicas da Literatura -----
+
+// Odena CD's candidatos de acordo com metodos da Literatura
+void ordena_cadidatos(std::vector<CD> &candi, int metodo, Instancia &dados)
 {
   //Criterio que ordena pela capacidade dos CDs em ordem decrescente
   if (metodo == 1)
@@ -187,13 +273,84 @@ void inicia_add(Instancia& dados, std::vector<CD>& candi, int metodo)
        candi[i].cd = i;
      }
   }
+
+  auto compara_custo = [](CD c1, CD c2) { return c1.custo < c2.custo; };
   std::sort (candi.begin(), candi.end(), compara_custo);
 }
 
-double add(Instancia& dados, int metodos)
+void drop(Instancia &dados, Solucao &sol)
+{
+  //E criada uma classe LPSolver para chamar o solver para resolver o problema do transporte
+  LPSolver solver(dados);
+  //E criado um vetor para avaliar a melhoria na solucao para cada facilidade fechada
+  std::vector<bool> abertas (dados.F, 1);
+  int indice;
+  double custos_fixos = 0, fo_temp = 0;
+  bool flag;
+
+  //E resolvido o problema do transporte com todas as facilidades abertas para se obter uma solucao inicial
+  solver.resolve();
+
+  //Adiciona-se o custo fixo por abrir todas as facilidades a Solucao
+  for (int i = 0; i < dados.F; i++)
+  {
+    if(abertas[i] == 1)
+    {
+      custos_fixos = custos_fixos + dados.b[i];
+    }
+  }
+  sol.func_obj = solver.func_obj + custos_fixos;
+
+  //Enquanto fechar facilidade gerar reducao de custos continua-se o procedimento
+  do
+  {
+    //Para a solucao atual e verificado o efeito de se fechar todas as facilidades separadamente,
+    //avaliando qual delas resulta o maior ganho
+    flag = false;
+
+    for (int i = 0; i < dados.F; i++)
+    {
+      //E avaliada a nova solucao apenas se a facilidade estiver aberta, caso contrario nao ha necessidade calcular
+      if (abertas[i] == 1)
+      {
+        //std::cout <<"ENTOUR: " << i << std::endl;
+        //Fecha-se a facilidade i
+        solver.fecha_cd(i, dados);
+        abertas[i] = 0;
+        custos_fixos = custos_fixos - dados.b[i];
+
+        //E chamada a funcao para resolver o problema do transporte para o vetor atual que retorna a FO
+        solver.resolve();
+
+        fo_temp = solver.func_obj + custos_fixos;
+        //std::cout << "FUNC : " << fo_temp << std::endl;
+        if (fo_temp < sol.func_obj)
+        {
+          indice = i;
+          sol.func_obj = fo_temp;
+          flag = true;
+        }
+        //Volta-se a abrir a facilidade i para avaliar o impacto da proxima
+        solver.abre_cd(i, dados);
+        abertas[i] = 1;
+        custos_fixos = custos_fixos + dados.b[i];
+      }
+    }
+    //Apos o termino da execucao caso a solucao tenha melhorado e atualizado no solver os indices da melhor solucao
+    if (flag)
+    {
+      solver.fecha_cd(indice, dados);
+      abertas[indice] = 0;
+      custos_fixos = custos_fixos - dados.b[indice];
+    }
+  }
+  while (flag);
+
+}
+
+void add(Instancia &dados, Solucao &sol, int metodos)
 {
   LPSolver solver(dados);
-  Solucao melhor_sol = Solucao(dados.I, dados.F, dados.J);
   std::vector<bool> abertas (dados.F, 0);
   std::vector<CD> candi (dados.F);
   bool flag;
@@ -213,7 +370,7 @@ double add(Instancia& dados, int metodos)
   }
 
   //Ordena-se CDs por algum criterio para a inicializacao da Add
-  inicia_add(dados, candi, metodos);
+  ordena_cadidatos(candi, metodos, dados);
 
   //Abre-se CDs ate que a demanda seja atendida, abrindo-se na ordem definida pela funcao inicia_add
   while (capacidade < demanda_total)
@@ -228,8 +385,8 @@ double add(Instancia& dados, int metodos)
 
   //Obtem-se uma solucao viavel inicial para o problema, com os CDs abertos a partir da inicia_Add
   solver.resolve();
-  melhor_sol.func_obj = solver.func_obj + custos_fixos;
-  solver.atualiza_sol(melhor_sol);
+  sol.func_obj = solver.func_obj + custos_fixos;
+  solver.atualiza_sol(sol, dados);
 
   //Sao abertas facilidades ate que nao gere uma reducao no custo total do problema
   do
@@ -249,12 +406,12 @@ double add(Instancia& dados, int metodos)
         fo_temp = solver.func_obj + custos_fixos;
 
       //Caso a abertura da facilidade leve a uma reducao dos custos totais salva-se esse resultado
-        if (fo_temp < melhor_sol.func_obj)
+        if (fo_temp < sol.func_obj)
         {
           //std::cout << "Entrou " << std::endl;
           indice = i;
           //solver.atualiza_sol(melhor_sol);
-          melhor_sol.func_obj = fo_temp;
+          sol.func_obj = fo_temp;
           flag = true;
         }
 
@@ -272,35 +429,9 @@ double add(Instancia& dados, int metodos)
     }
   }
   while (flag);
-
-  //Prints Gerais para verificar a solucao
-  /*
-  std::cout << "Funcao Objetivo Final: " << melhor_sol.func_obj << std::endl;
-
-  for (int i = 0; i < dados.F; i++)
-  {
-    //std::cout << "Facilidades abertas: " << abertas[i] << std::endl;
-    if (abertas[i] == 1)
-    {
-      capac = capac + dados.h[i];
-      std::cout << "CAPACIDADE DE " << i << ": " << dados.h[i] << std::endl;
-      std::cout << "Custo DE aber " << i << ": " << dados.b[i] << std::endl;
-      //std::cout << melhor_sol.y[i] << std::endl;
-    }
-  }
-
-  for (int j = 0; j < dados.J; j++)
-  {
-    demand = demand + dados.d[j];
-  }
-
-  std::cout << "CAPACIDADE: " << capac << "DEMANDA: " << demand << std::endl;
-  */
-  //std::cout << "Custo Fixos: " << melhor_sol.func_obj - custo_var << "Custo Variavel: " << custo_var << std::endl;
-  return melhor_sol.func_obj;
 }
 
-//  --- Heuristica Gulosa ---
+//   ----- Heuristica Gulosa -----
 
 //Construtor da struct Candidatos
 Candidatos::Candidatos(int tam): tamanho(tam)
@@ -340,13 +471,14 @@ void gera_custo(Instancia& inst, Candidatos& cand)
 }
 
 //Funcao que definira quais CDs abrir e qual o custo total deles ao final
-double gera_sol(Instancia& dados)
+void heuristica_gulosa(Instancia &dados, Solucao &sol)
 {
   int cont = 0;
   double custos_fixo = 0;
   int demanda_total = 0;
   LPSolver solver (dados);
-  Solucao melhor_sol (dados.I, dados.F, dados.J);
+
+  auto compara_custo = [](CD c1, CD c2) { return c1.custo < c2.custo; };
 
   for (int i = 0; i < dados.J; i++)
   {
@@ -378,13 +510,11 @@ double gera_sol(Instancia& dados)
   }
   //Chama-se o solver para resolver o problema do transporte para as facilidades abertas
   solver.resolve();
-  solver.atualiza_sol(melhor_sol);
-  melhor_sol.func_obj = custos_fixo + solver.func_obj;
-
-  return melhor_sol.func_obj;
+  solver.atualiza_sol(sol, dados);
+  sol.func_obj = custos_fixo + solver.func_obj;
 }
 
-//  --- Heuristica Iterativa da Mochila ---
+//  ----- Heuristica Iterativa -----
 
 ProgDinamica::ProgDinamica(Instancia &dados) {
   k = dados.F;
@@ -473,18 +603,42 @@ bool ProgDinamica::resolve() {
 }
 
 void inicializa_custos(Instancia &dados, std::vector<double> &custos) {
-  
+  std::vector<double> custos_ofer (dados.I), custos_deman (dados.J);
+
+  for (int f = 0; f < dados.F; f++) {
+    for (int i = 0; i < dados.I; i++) {
+      custos_ofer[i] = dados.c[i][f];
+    }
+
+    for (int j = 0; j < dados.J; j++) {
+      custos_deman[j] = dados.t[f][j];
+    }
+
+    std::sort (custos_ofer.begin(), custos_ofer.end());
+    std::sort (custos_deman.begin(), custos_deman.end());
+
+    double custo_ofer = 0, custo_deman = 0;
+    for (int i = 0; i < dados.I/3; i++) {
+      custo_ofer += custos_ofer[i];
+    }
+
+    for (int j = 0; j < dados.J/3; j++) {
+      custo_deman += custos_deman[j];
+    }
+
+    custos[f] = (custo_ofer/(dados.I/3) + custo_deman/(dados.J/3))*dados.h[f]/2 + dados.b[f];
+  }
 }
 
-void heuristica_iterativa(Instancia &dados, float alpha, Resultados &r) {
+void heuristica_iterativa(Instancia &dados, Solucao &sol, float alpha) {
   ProgDinamica pd(dados);
   LPSolver solver(dados);
-  double fo_atual = 0;
+  double fo_atual;;
 
-  r.fo = MAX;
-  r.itr.reserve(50);
-  r.vec_fo.reserve(50);
-  pd.custos = dados.b;
+  sol.func_obj = MAX;
+
+  //pd.custos = dados.b;
+  inicializa_custos(dados, pd.custos);
 
   for (int i=0; i<50; i++) {
     // Se a alocação de CDs mudou
@@ -506,10 +660,8 @@ void heuristica_iterativa(Instancia &dados, float alpha, Resultados &r) {
       fo_atual += solver.func_obj;
 
       // Se encontrou solucao melhor atualiza info
-      if (fo_atual < r.fo) {
-        r.fo = fo_atual;
-        r.itr.push_back(i);
-        r.vec_fo.push_back(r.fo);
+      if (fo_atual < sol.func_obj) {
+        solver.atualiza_sol(sol, dados);
       }
     }
 
@@ -517,6 +669,51 @@ void heuristica_iterativa(Instancia &dados, float alpha, Resultados &r) {
     solver.atualiza_custos(dados, pd.custos, alpha);
   }
 
-  r.itr.push_back(50);
-  r.vec_fo.push_back(r.fo);
+}
+
+//  ----- Busca Local -----
+
+void busca_local() {
+  Instancia dados("instancias_c/batch0/0_50_100_200_5.0");
+  LPSolver solver(dados);
+  Solucao sol(dados.I, dados.F, dados.J);
+
+  // Inicialização solucao com construtiva
+  heuristica_iterativa(dados, sol, 0.1);
+  std::cout << "Primeira Solucao = " << sol.func_obj << std::endl;
+
+  for (int f=0; f<dados.F; f++) {
+    if (sol.y[f] == 0) {
+      solver.fecha_cd(f, dados);
+    }
+  }
+
+  for (int itr = 0; itr < 10; itr++) {
+    double best_fo = MAX;
+    int best_move;
+
+    std::cout << "\nInicio itr = " << itr << std::endl;
+    for (int f=0; f<dados.F; f++) {
+      double fo = avalia_t1b(dados, sol, f);
+
+      if (fo == -1) {
+        continue;
+      }
+
+      else if (fo < best_fo) {
+        std::cout << fo << std::endl;
+        best_fo = fo;
+        best_move = f;
+      }
+    }
+    std::cout << best_fo << " ";
+
+    solver.troca(best_move, dados);
+    solver.resolve();
+    solver.atualiza_sol(sol, dados);
+
+    std::cout << sol.func_obj << std::endl;
+    break;
+  }
+
 }

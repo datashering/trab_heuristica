@@ -27,7 +27,8 @@ public:
   void resolve();
   void abre_cd(int, Instancia&);
   void fecha_cd(int, Instancia&);
-  void atualiza_sol(Solucao&);
+  void troca(int, Instancia&);
+  void atualiza_sol(Solucao&, Instancia&);
   void atualiza_custos(Instancia&, std::vector<double>&, float);
 };
 

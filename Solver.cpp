@@ -210,14 +210,28 @@ void LPSolver::fecha_cd(int idx, Instancia &dados) {
   glp_set_row_bnds(lp, dados.J + idx + 1, GLP_UP, 0.0, 0.0);
 }
 
-void LPSolver::atualiza_sol(Solucao &sol) {
+void LPSolver::troca(int idx, Instancia &dados) {
+  if (glp_get_row_ub(lp, dados.J + 1 + idx) > 0) {
+    glp_set_row_bnds(lp, dados.J + idx + 1, GLP_UP, 0.0, 0.0);
+  }
 
-  //Atualizando Vetor de facilidades abertas
+  else {
+    glp_set_row_bnds(lp, dados.J + idx + 1, GLP_UP, 0.0, dados.h[idx]);
+  }
+}
+
+void LPSolver::atualiza_sol(Solucao &sol, Instancia &dados) {
+  sol.func_obj = 0;
+  sol.cap_total = 0;
+
+  //Atualizando Vetor de facilidades abertas e add custos fixos
   for (int i = sol.J + 1; i < sol.J + sol.F + 1; i++)
   {
     if (glp_get_row_ub(lp, i) > 0)
     {
       sol.y[i - (sol.J + 1)] = 1;
+      sol.func_obj += dados.b[i - (sol.J + 1)];
+      sol.cap_total += dados.h[i - (sol.J + 1)];
     }
     else
     {
@@ -238,13 +252,15 @@ void LPSolver::atualiza_sol(Solucao &sol) {
     }
   }
 
+  sol.func_obj += func_obj;
 }
 
 void LPSolver::atualiza_custos(Instancia &dados, std::vector<double> &custos, float alpha) {
   int N = lp_var.size();
   int F = dados.F;
   int i, f, j;
-  std::vector<double> custo_transp(F, 0);
+  std::vector<double> custos_transp(F, 0);
+  //std::vector<double> qnt_transp(F, 0);
 
   for (int idx=1; idx<N; idx++) {
     if (glp_get_col_prim(lp, idx) == 0) {
@@ -254,23 +270,29 @@ void LPSolver::atualiza_custos(Instancia &dados, std::vector<double> &custos, fl
     if (lp_var[idx].name == 'x') {
       i = lp_var[idx].idx[0];
       f = lp_var[idx].idx[1];
-      custo_transp[f] += glp_get_col_prim(lp, idx) * dados.c[i][f];
+      custos_transp[f] += glp_get_col_prim(lp, idx) * dados.c[i][f];
     }
 
     else if (lp_var[idx].name == 'z') {
       f = lp_var[idx].idx[0];
       j = lp_var[idx].idx[1];
-      custo_transp[f] += glp_get_col_prim(lp, idx) * dados.t[f][j];
+      custos_transp[f] += glp_get_col_prim(lp, idx) * dados.t[f][j];
     }
 
     else {
       std::cout << "Erro: variável não chama nem x nem z" << std::endl;
+      exit(-1);
     }
+
+    //qnt_transp[f] += glp_get_col_prim(lp, idx);
   }
 
+  double custo_atual;
   for (int f=0; f<F; f++) {
-    if (custo_transp[f] != 0) {
-      custos[f] = (1 - alpha)*custos[f] +  alpha*(dados.b[f] + custo_transp[f]);
+    if (custos_transp[f] != 0) {
+      custo_atual = custos_transp[f] + dados.b[f];
+      //custo_atual = custos_transp[f]/qnt_transp[f] + dados.b[f]/dados.h[f];
+      custos[f] = (1 - alpha) * custos[f] + alpha * custo_atual;
     }
   }
 

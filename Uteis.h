@@ -14,6 +14,7 @@ struct Instancia
   std::vector<double> b;         //Custo fixo de abertura do CD
   double **c;                    //Custo de transporte unitario de uma fabrica pra um CD
   double **t;                    //Custo de transporter unitario de um CD para um ponto de demanda
+  int d_total;
 
   Instancia(const char *nome);
   ~Instancia();
@@ -23,6 +24,7 @@ struct Solucao
 {
   int I, F, J;
   double func_obj;
+  int cap_total;
   std::vector<bool> y;
   double **x;
   double **z;
