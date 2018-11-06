@@ -10,7 +10,7 @@
 #include "Solver.h"
 
 // Variaveis globais
-std::mt19937 gerador(123);
+std::mt19937 gerador(clock());
 
 //    ----- Heuristicas da Literatura -----
 
@@ -90,7 +90,7 @@ void ordena_cadidatos(std::vector<CD> &candi, int metodo, Instancia &dados)
   std::sort (candi.begin(), candi.end(), compara_custo);
 }
 
-void drop(Instancia &dados, Solucao &sol)
+void drop(Instancia &dados, Solucao &sol, bool aprox)
 {
   //E criada uma classe LPSolver para chamar o solver para resolver o problema do transporte
   LPSolver solver(dados);
@@ -102,6 +102,7 @@ void drop(Instancia &dados, Solucao &sol)
 
   //E resolvido o problema do transporte com todas as facilidades abertas para se obter uma solucao inicial
   solver.resolve();
+  solver.atualiza_sol(sol, dados);
 
   //Adiciona-se o custo fixo por abrir todas as facilidades a Solucao
   for (int i = 0; i < dados.F; i++)
@@ -111,7 +112,6 @@ void drop(Instancia &dados, Solucao &sol)
       custos_fixos = custos_fixos + dados.b[i];
     }
   }
-  sol.func_obj = solver.func_obj + custos_fixos;
 
   //Enquanto fechar facilidade gerar reducao de custos continua-se o procedimento
   do
@@ -131,16 +131,27 @@ void drop(Instancia &dados, Solucao &sol)
         abertas[i] = 0;
         custos_fixos = custos_fixos - dados.b[i];
 
-        //E chamada a funcao para resolver o problema do transporte para o vetor atual que retorna a FO
-        solver.resolve();
+        if (aprox == 1)
+        {
+          fo_temp = fecha_aprox(dados, sol, i);
+        }
+        else
+        {
+          //E chamada a funcao para resolver o problema do transporte para o vetor atual que retorna a FO
+          solver.resolve();
+          fo_temp = solver.func_obj + custos_fixos;
+        }
 
-        fo_temp = solver.func_obj + custos_fixos;
-        //std::cout << "FUNC : " << fo_temp << std::endl;
+        std::cout << "Valor: " << fo_temp << " FO: " << sol.func_obj << '\n';
         if (fo_temp < sol.func_obj)
         {
           indice = i;
           sol.func_obj = fo_temp;
           flag = true;
+          if (aprox == 0)
+          {
+            solver.atualiza_sol(sol, dados);
+          }
         }
         //Volta-se a abrir a facilidade i para avaliar o impacto da proxima
         solver.abre_cd(i, dados);
@@ -154,13 +165,17 @@ void drop(Instancia &dados, Solucao &sol)
       solver.fecha_cd(indice, dados);
       abertas[indice] = 0;
       custos_fixos = custos_fixos - dados.b[indice];
+      if (aprox == 1)
+      {
+        solver.resolve();
+        solver.atualiza_sol(sol, dados);
+      }
     }
   }
   while (flag);
-
 }
 
-void add(Instancia &dados, Solucao &sol, int metodos)
+void add(Instancia &dados, Solucao &sol, int metodos, bool aprox)
 {
   LPSolver solver(dados);
   std::vector<bool> abertas (dados.F, 0);
@@ -197,7 +212,6 @@ void add(Instancia &dados, Solucao &sol, int metodos)
 
   //Obtem-se uma solucao viavel inicial para o problema, com os CDs abertos a partir da inicia_Add
   solver.resolve();
-  sol.func_obj = solver.func_obj + custos_fixos;
   solver.atualiza_sol(sol, dados);
 
   //Sao abertas facilidades ate que nao gere uma reducao no custo total do problema
@@ -213,23 +227,31 @@ void add(Instancia &dados, Solucao &sol, int metodos)
         solver.abre_cd(i, dados);
         abertas[i] = 1;
         custos_fixos = custos_fixos + dados.b[i];
-
-        solver.resolve();
-        fo_temp = solver.func_obj + custos_fixos;
+        if (aprox == 1)
+        {
+          fo_temp = abre_aprox(dados, sol, i);
+        }
+        else
+        {
+          solver.resolve();
+          fo_temp = solver.func_obj + custos_fixos;
+        }
 
       //Caso a abertura da facilidade leve a uma reducao dos custos totais salva-se esse resultado
         if (fo_temp < sol.func_obj)
         {
-          //std::cout << "Entrou " << std::endl;
           indice = i;
-          //solver.atualiza_sol(melhor_sol);
           sol.func_obj = fo_temp;
           flag = true;
+          if (aprox == 0)
+          {
+            solver.atualiza_sol(sol, dados);
+          }
         }
 
-	solver.fecha_cd(i, dados);
-	abertas[i] = 0;
-	custos_fixos = custos_fixos - dados.b[i];
+	  solver.fecha_cd(i, dados);
+	  abertas[i] = 0;
+	  custos_fixos = custos_fixos - dados.b[i];
       }
     }
 
@@ -238,6 +260,11 @@ void add(Instancia &dados, Solucao &sol, int metodos)
       solver.abre_cd(indice, dados);
       abertas[indice] = 1;
       custos_fixos = custos_fixos + dados.b[indice];
+      if (aprox == 1)
+      {
+        solver.resolve();
+        solver.atualiza_sol(sol, dados);
+      }
     }
   }
   while (flag);
@@ -315,7 +342,6 @@ void heuristica_gulosa(Instancia &dados, Solucao &sol)
   //Chama-se o solver para resolver o problema do transporte para as facilidades abertas
   solver.resolve();
   solver.atualiza_sol(sol, dados);
-  sol.func_obj = custos_fixo + solver.func_obj;
 }
 
 //  ----- Heuristica Iterativa -----
@@ -387,4 +413,31 @@ void heuristica_iterativa(Instancia &dados, Solucao &sol, float alpha) {
     solver.atualiza_custos(dados, pd.custos, alpha);
   }
 
+}
+
+Genetico::Genetico(int tam_pop, int num_part, int parada, double mutacao, int num_fac)
+{
+  tam_pop = tam_pop;
+  num_part = num_part;
+  parada = parada;
+  mutacao = mutacao;
+  pop.resize(tam_pop);
+  for (int i = 0; i < tam_pop; i++)
+  {
+    pop[i].chaves.resize(num_fac);
+  }
+}
+
+void Genetico::inicia_populacao()
+{
+  std::uniform_real_distribution<double> unif(0, 1);
+  for (int i = 0; i < tam_pop; i++)
+  {
+    for (int j = 0; j < pop[i].chaves.size(); j++)
+    {
+      bool val = round(unif(gerador));
+      pop[i].chaves[j] = val;
+      std::cout << pop[i].chaves[j] << '\n';
+    }
+  }
 }
