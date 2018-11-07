@@ -25,3 +25,7 @@ void add(Instancia&, Solucao&, int);
 void inicializa_custos(Instancia&, std::vector<double>&);
 
 void heuristica_iterativa(Instancia&, Solucao&, float);
+
+// --- Meta Heuristicas ---
+
+void busca_local();

@@ -315,7 +315,7 @@ void heuristica_gulosa(Instancia &dados, Solucao &sol)
   //Chama-se o solver para resolver o problema do transporte para as facilidades abertas
   solver.resolve();
   solver.atualiza_sol(sol, dados);
-  sol.func_obj = custos_fixo + solver.func_obj;
+
 }
 
 //  ----- Heuristica Iterativa -----
@@ -387,4 +387,49 @@ void heuristica_iterativa(Instancia &dados, Solucao &sol, float alpha) {
     solver.atualiza_custos(dados, pd.custos, alpha);
   }
 
+}
+
+void busca_local() {
+  Instancia dados("instancias_c/batch0/0_50_100_200_5.0");
+  LPSolver solver(dados);
+  Solucao sol(dados.I, dados.F, dados.J);
+
+  // Inicialização solucao com construtiva
+  heuristica_gulosa(dados, sol);
+  std::cout << "Primeira Solucao = " << sol.func_obj << std::endl;
+
+  double best_fo = sol.func_obj;
+  bool end = true;
+
+  while (true) {
+    int best_move;
+
+    for (int f=0; f<dados.F; f++) {
+      double fo = avalia_t1b(dados, sol, f);
+
+      if (fo == -1) {
+        continue;
+      }
+
+      else if (fo < best_fo) {
+        end  = false;
+        best_fo = fo;
+        best_move = f;
+      }
+    }
+    std::cout << std::endl;
+
+    if (end) {
+      break;
+    }
+    end = true;
+
+    solver.troca(best_move, dados);
+    solver.resolve();
+    solver.atualiza_sol(sol, dados);
+
+    std::cout << sol.func_obj << std::endl;
+  }
+
+  std::cout << best_fo << std::endl;
 }
