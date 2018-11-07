@@ -6,9 +6,6 @@
 #include <iostream>
 #include "Uteis.h"
 
-//  --- Constantes e Typedef  ---
-const double MAX = std::numeric_limits<double>::max();
-
 struct Indice {
   char name;
   int idx[2];
