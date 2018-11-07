@@ -306,6 +306,24 @@ double abre_aprox(Instancia &dados, const Solucao &sol, int cd) {
 double fecha_aprox(Instancia &dados, const Solucao &sol, int cd) {
   typedef std::array<double, 3> Tuple;
 
+  // Varificando viabilidade
+  int demanda_total = 0;
+  int capacidade_total = 0;
+
+  for (int j=0; j<dados.J; j++) {
+    demanda_total += dados.d[j];
+  }
+
+  for (int f=0; f<dados.F; f++) {
+    if (f != cd) {
+      capacidade_total += dados.h[f]*sol.y[f];
+    }
+  }
+
+  if (demanda_total > capacidade_total) {
+    return -1;
+  }
+
   // Calculo a capacidade restante de cada CD aberto
   std::vector<int> cap_cd(dados.F);
   std::vector<int> cds_abertos;
@@ -391,10 +409,6 @@ double fecha_aprox(Instancia &dados, const Solucao &sol, int cd) {
       fo += qtd * t[2];
       rx[i] += qtd;
       rz[j] += qtd;
-      // sol.x[i][cd] -= qtd;
-      // sol.z[cd][j] -= qtd;
-      // sol.x[i][f] += qtd;
-      // sol.z[f][j] += qtd;
 
       if (sol.z[cd][j] - rz[j] == 0) {
         break;

@@ -10,7 +10,7 @@
 #include "Solver.h"
 
 // Variaveis globais
-std::mt19937 gerador(123);
+std::mt19937 gerador(clock());
 
 //    ----- Heuristicas da Literatura -----
 
@@ -102,6 +102,7 @@ void drop(Instancia &dados, Solucao &sol, bool aprox)
 
   //E resolvido o problema do transporte com todas as facilidades abertas para se obter uma solucao inicial
   solver.resolve();
+  solver.atualiza_sol(sol, dados);
 
   //Adiciona-se o custo fixo por abrir todas as facilidades a Solucao
   for (int i = 0; i < dados.F; i++)
@@ -111,7 +112,6 @@ void drop(Instancia &dados, Solucao &sol, bool aprox)
       custos_fixos = custos_fixos + dados.b[i];
     }
   }
-  sol.func_obj = solver.func_obj + custos_fixos;
 
   //Enquanto fechar facilidade gerar reducao de custos continua-se o procedimento
   do
@@ -131,16 +131,27 @@ void drop(Instancia &dados, Solucao &sol, bool aprox)
         abertas[i] = 0;
         custos_fixos = custos_fixos - dados.b[i];
 
-        //E chamada a funcao para resolver o problema do transporte para o vetor atual que retorna a FO
-        solver.resolve();
+        if (aprox == 1)
+        {
+          fo_temp = fecha_aprox(dados, sol, i);
+        }
+        else
+        {
+          //E chamada a funcao para resolver o problema do transporte para o vetor atual que retorna a FO
+          solver.resolve();
+          fo_temp = solver.func_obj + custos_fixos;
+        }
 
-        fo_temp = solver.func_obj + custos_fixos;
-        //std::cout << "FUNC : " << fo_temp << std::endl;
-        if (fo_temp < sol.func_obj)
+        //std::cout << "Valor: " << fo_temp << " FO: " << sol.func_obj << '\n';
+        if (fo_temp < sol.func_obj && fo_temp > 0)
         {
           indice = i;
           sol.func_obj = fo_temp;
           flag = true;
+          if (aprox == 0)
+          {
+            solver.atualiza_sol(sol, dados);
+          }
         }
         //Volta-se a abrir a facilidade i para avaliar o impacto da proxima
         solver.abre_cd(i, dados);
@@ -154,10 +165,14 @@ void drop(Instancia &dados, Solucao &sol, bool aprox)
       solver.fecha_cd(indice, dados);
       abertas[indice] = 0;
       custos_fixos = custos_fixos - dados.b[indice];
+      if (aprox == 1)
+      {
+        solver.resolve();
+        solver.atualiza_sol(sol, dados);
+      }
     }
   }
   while (flag);
-
 }
 
 void add(Instancia &dados, Solucao &sol, int metodos, bool aprox)
@@ -214,7 +229,7 @@ void add(Instancia &dados, Solucao &sol, int metodos, bool aprox)
         custos_fixos = custos_fixos + dados.b[i];
         if (aprox == 1)
         {
-          fo_temp = abre_aprox(dados, sol, i);// + custos_fixos;
+          fo_temp = abre_aprox(dados, sol, i);
         }
         else
         {
@@ -397,5 +412,138 @@ void heuristica_iterativa(Instancia &dados, Solucao &sol, float alpha) {
     //Atualiza custos
     solver.atualiza_custos(dados, pd.custos, alpha);
   }
+
+}
+
+
+//  ---- Tabu Search ----
+
+void busca_local() {
+  Instancia dados("instancias_c/batch0/0_50_100_200_5.0");
+  LPSolver solver(dados);
+  Solucao sol(dados.I, dados.F, dados.J);
+
+  // Inicialização solucao com construtiva
+  heuristica_gulosa(dados, sol);
+  std::cout << "Primeira Solucao = " << sol.func_obj << std::endl;
+
+  double best_fo = sol.func_obj;
+  bool end = true;
+
+  while (true) {
+    int best_move;
+
+    for (int f=0; f<dados.F; f++) {
+      double fo = avalia_t1b(dados, sol, f);
+
+      if (fo == -1) {
+        continue;
+      }
+
+      else if (fo < best_fo) {
+        end  = false;
+        best_fo = fo;
+        best_move = f;
+      }
+    }
+    std::cout << std::endl;
+
+    if (end) {
+      break;
+    }
+    end = true;
+
+    solver.troca(best_move, dados);
+    solver.resolve();
+    solver.atualiza_sol(sol, dados);
+
+    std::cout << sol.func_obj << std::endl;
+  }
+
+  std::cout << best_fo << std::endl;
+}
+
+//  ---- Algoritimo Genetico ----
+
+Genetico::Genetico(int tam_pop, int num_part, int parada, double mutacao, int num_fac)
+{
+  tam_pop = tam_pop;
+  num_part = num_part;
+  parada = parada;
+  mutacao = mutacao;
+  pop.resize(tam_pop);
+  for (int i = 0; i < tam_pop; i++)
+  {
+    pop[i].chaves.resize(num_fac);
+  }
+  cand.resize(num_part);
+}
+
+void Genetico::inicia_populacao()
+{
+  std::uniform_real_distribution<double> unif(0, 1);
+  for (int i = 0; i < tam_pop; i++)
+  {
+    for (int j = 0; j < pop[i].chaves.size(); j++)
+    {
+      bool val = round(unif(gerador));
+      pop[i].chaves[j] = val;
+      std::cout << pop[i].chaves[j] << '\n';
+    }
+  }
+}
+
+//Sera escolhido o modelo de torneio para a selecao dos participantes a participarem da reproducao
+void Genetico::seleciona_populacao(Instancia& dados)
+{
+  std::vector<populacao> cand;
+  cand.resize(num_part);
+  std::uniform_real_distribution<double> unif(0, dados.F);
+  LPSolver solver(dados);
+  populacao melhor_result;
+
+  //Repete-se o torneio num_part vezes para definir quantas solucoes se reproduzirao
+  for (int k = 0; k < num_part; k++)
+  {
+    //Seleciona-se os candidatos do torneio
+    int randomize = round(unif(gerador));
+    random_shuffle(pop.begin(), pop.end(), randomize);
+    for (int i = 0; i < num_part; i++)
+    {
+      cand[i] = pop[i];
+    }
+    //Escolhe-se o melhor de cada torneio
+    for (int i = 0; i < cand.size(); i++)
+    {
+      for (int j = 0; j < cand[i].chaves.size(); i++)
+      {
+        if (cand[i].chaves[j] == 0)
+        {
+          solver.fecha_cd(j, dados);
+        }
+        else
+        {
+          solver.abre_cd(j, dados);
+        }
+      }
+      cand[i].fo = solver.resolve();
+      if (i == 0)
+      {
+        melhor_result = cand[i];
+      }
+      else
+      {
+        if (cand[i].fo < melhor_result.fo)
+        {
+          melhor_result = cand[i];
+        }
+      }
+    }
+    selec[k] = melhor_result;
+  }
+}
+
+void reproduz_populacao()
+{
 
 }

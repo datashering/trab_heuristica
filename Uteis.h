@@ -74,6 +74,11 @@ struct ProgDinamica {
   bool resolve();
 };
 
+// Lista Tabu
+struct TabuLista {
+
+};
+
 // Funcoes diversas
 double abre_aprox(Instancia&, const Solucao&, int);
 double fecha_aprox(Instancia&, const Solucao&, int);
