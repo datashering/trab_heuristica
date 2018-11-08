@@ -115,10 +115,10 @@ def write_mod(p, h, d, b, c, t, file):
 
 if __name__ == "__main__":
 
-    IFJ = [(10, 20, 40), (10, 40, 40), (25, 50, 100), (25, 100, 100), (50, 100, 200), (50, 200, 200), (100, 200, 500), (100, 300, 300), (100, 300, 500)]
+    IFJ = [(10, 20, 40), (50, 100, 200), (100, 200, 500), (100, 300, 500)]
 
     V = range(20, 201, 10)
-    R = [1.5, 3.0, 5.0, 10.0]
+    R = [1.5, 5.0, 10.0]
 
 
     # Batch0
@@ -154,12 +154,8 @@ if __name__ == "__main__":
 
     # Batch7
     for i,f,j in IFJ:
-        [write_instance(i, f, j, 3.0, "batch7/" + str(v) + "_") for v in range(3)]
+        [write_instance(i, f, j, 5.0, "batch7/" + str(v) + "_") for v in range(3)]
 
     # Batch8
     for i,f,j in IFJ:
-        [write_instance(i, f, j, 5.0, "batch8/" + str(v) + "_") for v in range(3)]
-
-    # Batch9
-    for i,f,j in IFJ:
-        [write_instance(i, f, j, 10.0, "batch9/" + str(v) + "_") for v in range(3)]
+        [write_instance(i, f, j, 10.0, "batch8/" + str(v) + "_") for v in range(3)]

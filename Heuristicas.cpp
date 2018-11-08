@@ -264,6 +264,7 @@ void add(Instancia &dados, Solucao &sol, int metodos, bool aprox)
       {
         solver.resolve();
         solver.atualiza_sol(sol, dados);
+        std::cout << "Resolveu!" << '\n';
       }
     }
   }
@@ -476,7 +477,7 @@ Genetico::Genetico(int tam_pop, int num_part, int parada, double mutacao, int nu
   {
     pop[i].chaves.resize(num_fac);
   }
-  cand.resize(num_part);
+  selec.resize(num_part);
 }
 
 void Genetico::inicia_populacao()
@@ -493,7 +494,7 @@ void Genetico::inicia_populacao()
   }
 }
 
-//Sera escolhido o modelo de torneio para a selecao dos participantes a participarem da reproducao
+// Sera escolhido o modelo de torneio para a selecao dos participantes a participarem da reproducao
 void Genetico::seleciona_populacao(Instancia& dados)
 {
   std::vector<populacao> cand;
