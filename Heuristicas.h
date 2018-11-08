@@ -32,27 +32,43 @@ void busca_local();
 
 //  --- Heuristica Genetica
 
+struct Individuo
+{
+  double fo;
+  std::vector<double> chaves;
+  void calcula_fo(Instancia&);
+};
+
+struct HiperParam
+{
+  int tam_pop;
+  int qtd_pais;
+  int qtd_candidatos;
+  int qtd_torneios;
+  int parada;
+  int sobreviventes;
+  double taxa_mutacao;
+};
+
 class Genetico
 {
 public:
 
-  struct populacao
-  {
-    double fo;
-    std::vector<bool> chaves;
-  };
-
   int tam_pop;
-  int num_part;
+  int qtd_pais;
+  int qtd_candidatos;
+  int qtd_torneios;
   int parada;
-  double mutacao;
-  std::vector<populacao> pop;
-  std::vector<populacao> selec;
+  int sobreviventes;
+  double taxa_mutacao;
 
-  Genetico(int, int, int, double, int);
+  std::vector<Individuo> populacao;
+  std::vector<Individuo> selec;
+
+  Genetico(int, int, int, int, int, int, double, int);
   void inicia_populacao();
-  void seleciona_populacao(Instancia& dados);
-  void reproduz_populacao();
-  void redefine_populacao(int);
-  void evolucao(Solucao&);
+  void seleciona_populacao(Instancia&);
+  void gera_populacao(double);
+  bool mutacao();
+  void evolucao(Solucao&, Instancia&);
 };

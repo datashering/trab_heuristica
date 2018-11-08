@@ -5,6 +5,7 @@
 #include <cmath>
 #include <array>
 #include <random>
+#include <functional>
 #include "Heuristicas.h"
 #include "Uteis.h"
 #include "Solver.h"
@@ -466,18 +467,70 @@ void busca_local() {
 
 //  ---- Algoritimo Genetico ----
 
-Genetico::Genetico(int tam_pop, int num_part, int parada, double mutacao, int num_fac)
+void Individuo::calcula_fo(Instancia& dados)
 {
-  tam_pop = tam_pop;
-  num_part = num_part;
-  parada = parada;
-  mutacao = mutacao;
-  pop.resize(tam_pop);
+  LPSolver solver(dados);
+  std::vector<int> indices;
+  indices.resize(dados.F);
+  for (int i = 0; i < dados.F; i++)
+  {
+    indices[i] = i;
+  }
+
+  auto compara_chave = [&] (int i, int j) { return chaves[i] > chaves[j]; };
+  std::sort(indices.begin(), indices.end(), compara_chave);
+
+  //Fecha-se todos os CDs que sao inicializados abertos
+  for (int i = 0; i < dados.F; i++)
+  {
+    solver.fecha_cd(i,dados);
+  }
+
+  int capacidade = 0;
+  int idx = 0;
+  double custos_fixos = 0;
+  //Abre-se facilidades ate que se tenha uma solucao viavel
+  while(capacidade < dados.d_total)
+  {
+    solver.abre_cd(indices[idx], dados);
+    capacidade+= dados.h[indices[idx]];
+    custos_fixos+= dados.b[indices[idx]];
+    idx++;
+  }
+  solver.resolve();
+  fo = solver.func_obj + custos_fixos;
+
+  //Abre-se CDs ate que nao compense abrir algum na lista de chaves
+  bool flag = true;
+  if (idx > dados.F - 1)
+  {
+    flag = false;
+  }
+  while (flag)
+  {
+    solver.abre_cd(indices[idx], dados);
+    custos_fixos+= dados.b[indices[idx]];
+    solver.resolve();
+    if (solver.func_obj + custos_fixos < fo && idx <= dados.F - 1)
+    {
+      fo = solver.func_obj + custos_fixos;
+      idx++;
+    }
+    else
+    {
+      flag = false;
+    }
+  }
+}
+
+Genetico::Genetico(int tam_pop, int qtd_pais, int qtd_candidatos, int qtd_torneios, int parada, int sobreviventes, double taxa_mutacao, int num_fac): tam_pop(tam_pop), qtd_pais(qtd_pais), qtd_candidatos(qtd_candidatos), qtd_torneios(qtd_torneios), parada(parada), sobreviventes(sobreviventes), taxa_mutacao(taxa_mutacao)
+{
+  populacao.resize(tam_pop);
   for (int i = 0; i < tam_pop; i++)
   {
-    pop[i].chaves.resize(num_fac);
+    populacao[i].chaves.resize(num_fac);
   }
-  selec.resize(num_part);
+  selec.resize(qtd_pais);
 }
 
 void Genetico::inicia_populacao()
@@ -485,66 +538,137 @@ void Genetico::inicia_populacao()
   std::uniform_real_distribution<double> unif(0, 1);
   for (int i = 0; i < tam_pop; i++)
   {
-    for (int j = 0; j < pop[i].chaves.size(); j++)
+    for (int j = 0; j < populacao[i].chaves.size(); j++)
     {
-      bool val = round(unif(gerador));
-      pop[i].chaves[j] = val;
-      std::cout << pop[i].chaves[j] << '\n';
+      double val = unif(gerador);
+      populacao[i].chaves[j] = val;
+      // std::cout << populacao[i].chaves[j] << '\n';
     }
+    populacao[i].fo = -1;
   }
 }
 
 // Sera escolhido o modelo de torneio para a selecao dos participantes a participarem da reproducao
 void Genetico::seleciona_populacao(Instancia& dados)
 {
-  std::vector<populacao> cand;
-  cand.resize(num_part);
-  std::uniform_real_distribution<double> unif(0, dados.F);
-  LPSolver solver(dados);
-  populacao melhor_result;
+  std::vector<int> candidatos;
+  std::vector<bool> selecionados (tam_pop, 0);
+  candidatos.resize(tam_pop);
+  for (int i = 0; i < candidatos.size(); i++)
+  {
+    candidatos[i] = i;
+  }
 
-  //Repete-se o torneio num_part vezes para definir quantas solucoes se reproduzirao
-  for (int k = 0; k < num_part; k++)
+  //Contador que servira para definir os escolhidos
+  int esc = 0;
+  //Repete-se o torneio qtd_pais vezes para definir quantas solucoes se reproduzirao
+  for (int k = 0; k < qtd_torneios; k++)
   {
     //Seleciona-se os candidatos do torneio
-    int randomize = round(unif(gerador));
-    random_shuffle(pop.begin(), pop.end(), randomize);
-    for (int i = 0; i < num_part; i++)
-    {
-      cand[i] = pop[i];
-    }
+    std::random_shuffle (candidatos.begin(), candidatos.end());
     //Escolhe-se o melhor de cada torneio
-    for (int i = 0; i < cand.size(); i++)
+    for (int i = 0; i < qtd_candidatos; i++)
     {
-      for (int j = 0; j < cand[i].chaves.size(); i++)
+      populacao[candidatos[i]].calcula_fo(dados);
+    }
+    auto compara_fo = [&] (int i, int j) { return populacao[i].fo < populacao[j].fo; };
+    std::sort(candidatos.begin(), candidatos.begin() + qtd_candidatos, compara_fo);
+
+    int max_part = 0;
+    for (int j = 0; j < qtd_candidatos; j++)
+    {
+      if (selecionados[candidatos[j]] == 0)
       {
-        if (cand[i].chaves[j] == 0)
-        {
-          solver.fecha_cd(j, dados);
-        }
-        else
-        {
-          solver.abre_cd(j, dados);
-        }
+        selec[esc] = populacao[candidatos[j]];
+        selecionados[candidatos[j]] = 1;
+        // std::cout << "FO Selec: " << selec[esc].fo << '\n';
+        esc++;
+        max_part++;
       }
-      cand[i].fo = solver.resolve();
-      if (i == 0)
+      if (max_part >= qtd_pais/qtd_torneios)
       {
-        melhor_result = cand[i];
-      }
-      else
-      {
-        if (cand[i].fo < melhor_result.fo)
-        {
-          melhor_result = cand[i];
-        }
+        break;
       }
     }
-    selec[k] = melhor_result;
   }
 }
 
-void reproduz_populacao()
+bool Genetico::mutacao()
 {
+  std::uniform_real_distribution<double> unif(0, 1);
+  double chance = unif(gerador);
+  if (chance <= taxa_mutacao)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
 
+void Genetico::gera_populacao(double taxa_combinacao)
+{
+  std::uniform_real_distribution<double> unif(0, 1);
+  //Gera tam_pop novas solucoes atraves da combinacao dos pais
+  for (int i = 0; i < tam_pop - sobreviventes; i++)
+  {
+    //Sao definidos os pais a gerarem um novo indiviuo, os pais sao escolhidos de forma igual caso a pop seja multiplo do num de pais
+    Individuo pai1, pai2;
+    pai1.chaves.resize(populacao[i].chaves.size());
+    pai2.chaves.resize(populacao[i].chaves.size());
+    pai1 = selec[i % (qtd_pais/2)];
+    pai2 = selec[i % (qtd_pais/2) + qtd_pais/2];
+
+    for (int j = 0; j < populacao[i].chaves.size(); j++)
+    {
+      if (mutacao())
+      {
+        populacao[i].chaves[j] = unif(gerador);
+      }
+      else
+      {
+        populacao[i].chaves[j] = (taxa_combinacao * pai1.chaves[j] + (1 - taxa_combinacao)*pai2.chaves[j]);
+      }
+    }
+    populacao[i].fo = -1;
+  }
+
+  auto compara_fo = [] (Individuo p1, Individuo p2) { return p1.fo < p2.fo; };
+  std::sort(selec.begin(), selec.end(), compara_fo);
+    for (int i = 0; i < sobreviventes; i++)
+  {
+    populacao[i + tam_pop - sobreviventes] = selec[i];
+  }
+}
+
+void Genetico::evolucao(Solucao& sol, Instancia& dados)
+{
+  inicia_populacao();
+  for (int i = 0; i < parada; i++)
+  {
+    seleciona_populacao(dados);
+    if (i == 0)
+    {
+      sol.func_obj = selec[0].fo;
+      for (int j = 1; j < qtd_pais; j++)
+      {
+        if (selec[j].fo < sol.func_obj)
+        {
+          sol.func_obj = selec[j].fo;
+        }
+      }
+    }
+    else
+    {
+      for (int j = 0; j < qtd_pais; j++)
+      {
+        if (selec[j].fo < sol.func_obj)
+        {
+          sol.func_obj = selec[j].fo;
+        }
+      }
+    }
+    gera_populacao(0.5);
+  }
 }
